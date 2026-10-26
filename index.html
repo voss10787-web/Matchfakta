@@ -1522,22 +1522,27 @@ window.addEventListener('resize',updateBack,{passive:true});
 // Only horizontal swipes beginning on non-interactive page areas change tabs.
 // Tables, forms, buttons and other scrollable regions retain their own gestures.
 let start=null;
-main.addEventListener('touchstart',e=>{
- if(e.touches.length!==1){start=null;return}
- const t=e.target;
- if(t.closest('button,input,select,textarea,label,a,summary,table,.scroll,[contenteditable],#quickPicker,[role="dialog"]')){start=null;return}
- const touch=e.touches[0];start={x:touch.clientX,y:touch.clientY,time:Date.now()};
-},{passive:true});
-main.addEventListener('touchend',e=>{
+// Listen on the whole document: the panels and scoreboard are not necessarily
+// descendants of the same container after the two-view layout is assembled.
+document.addEventListener('touchstart',e=>{
+ if(e.touches.length!==1){start=null;return;}
+ const target=e.target;
+ if(!target.closest('#mcMatchView,#mcAnalysisView,#mcViewNav,#mcViewHelp')){start=null;return;}
+ // Never hijack sliders, text entry or a horizontally scrollable table.
+ if(target.closest('input,select,textarea,[contenteditable],.scroll,table,[role="dialog"]')){start=null;return;}
+ const touch=e.touches[0];
+ start={x:touch.clientX,y:touch.clientY,time:Date.now()};
+},{passive:true,capture:true});
+document.addEventListener('touchend',e=>{
  if(!start||e.changedTouches.length!==1)return;
  const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
- if(Math.abs(dx)>90&&Math.abs(dx)>Math.abs(dy)*1.7&&Date.now()-start.time<900){
+ if(Math.abs(dx)>=65&&Math.abs(dx)>Math.abs(dy)*1.35&&Date.now()-start.time<1400){
   if(dx<0&&current==='match')setView('analysis',true);
-  if(dx>0&&current==='analysis')setView('match',true);
+  else if(dx>0&&current==='analysis')setView('match',true);
  }
  start=null;
-},{passive:true});
-main.addEventListener('touchcancel',()=>start=null,{passive:true});
+},{passive:true,capture:true});
+document.addEventListener('touchcancel',()=>start=null,{passive:true,capture:true});
 // Dynamic internmatch panel is created later; move it into analysis when available.
 const observer=new MutationObserver(()=>{
  const dynamic=$('internalPlayerStats');

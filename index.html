@@ -881,7 +881,7 @@ section.panel.mc-foldable.mc-folded{padding-bottom:12px!important}
 'use strict';
 const $=id=>document.getElementById(id);
 const panel=document.createElement('section');panel.id='internalPlayerStats';panel.className='panel';panel.hidden=true;
-panel.innerHTML='<h2>🧪 Spelarstatistik – internmatch</h2><p class="help">Separat teststatistik för båda lagen. Sparas endast i den pågående matchen, aldrig i säsongsarkivet.</p><div class="ips-lag"><button type="button" id="ipsBlue">🔵 Öjaby blå</button><button type="button" id="ipsRed">🔴 Öjaby röd</button></div><p id="ipsActive" class="help"></p><div class="ips-grid" id="ipsActions"></div><p class="help" id="ipsHelp"></p><div class="ips-scroll"><table><thead><tr><th>Spelare</th><th>M</th><th>A</th><th>P</th><th>Sk mål</th><th>Sk ut</th><th>Sk täck</th><th>Täckta</th><th>Utv min</th><th>Speltid</th></tr></thead><tbody id="ipsRows"></tbody></table></div><p id="ipsTotals" class="help"></p><button type="button" class="secondary" id="ipsUndo">↶ Ångra senaste testhändelsen</button>';
+panel.innerHTML='<h2>🧪 Spelarstatistik – internmatch</h2><p class="help">Separat teststatistik för båda lagen. Sparas endast i den pågående matchen, aldrig i säsongsarkivet.</p><div class="ips-lag"><button type="button" id="ipsBlue">🔵 Öjaby blå</button><button type="button" id="ipsRed">🔴 Öjaby röd</button></div><p id="ipsActive" class="help"></p><div class="row" style="margin:10px 0"><label>Målvakt för valt lag <select id="ipsGoalie"></select></label><span id="ipsGoalieStatus" class="help"></span></div><div class="ips-grid"> id="ipsActions"></div><p class="help" id="ipsHelp"></p><div class="ips-scroll"><table><thead><tr><th>Spelare</th><th>M</th><th>A</th><th>P</th><th>Sk mål</th><th>Sk ut</th><th>Sk täck</th><th>Täckta</th><th>Utv min</th><th>Speltid</th></tr></thead><tbody id="ipsRows"></tbody></table></div><p id="ipsTotals" class="help"></p><button type="button" class="secondary" id="ipsUndo">↶ Ångra senaste testhändelsen</button>';
 const anchor=$('internalTeams')||$('quickPanel');
 (anchor.closest('section.panel')||anchor).after(panel);
 let selected='red', lastKey='';
@@ -912,6 +912,11 @@ function events(side){
 }
 async function record(type){
  if(!internal())return;
+ // Goals and penalties are whistles: pause before opening the player picker.
+ if((type==='goal'||type==='penalty')&&state.running){
+  tick();state.running=false;clearInterval(timer);timer=null;
+  save();render();
+ }
  ensure();
  const a=active(selected),players=[...(a?.players||[])];
  if(!players.length){alert('Välj en femma för '+(selected==='red'?'Öjaby röd':'Öjaby blå')+' först.');return}
@@ -958,6 +963,18 @@ function rows(side){
 function draw(){
  panel.hidden=!internal();if(!internal())return;
  ensure();
+ const goalieSelect=$('ipsGoalie');
+ const goalieNames=roster.filter(p=>p.active&&p.goalie).map(p=>p.name);
+ const current=selected==='red'?(state.internalRedGoalie||''):(state.goalkeeper||'');
+ if(goalieSelect.dataset.team!==selected || goalieSelect.dataset.names!==goalieNames.join('|')){
+  goalieSelect.replaceChildren();
+  for(const name of ['',...goalieNames]){
+   const opt=document.createElement('option');opt.value=name;opt.textContent=name||'– Välj målvakt –';goalieSelect.append(opt);
+  }
+  goalieSelect.dataset.team=selected;goalieSelect.dataset.names=goalieNames.join('|');
+ }
+ goalieSelect.value=current;
+ $('ipsGoalieStatus').textContent=current?'Vald: '+current:'Ingen målvakt vald';
  $('ipsBlue').className=selected==='blue'?'active':'secondary';
  $('ipsRed').className=selected==='red'?'active':'secondary';
  const a=active(selected);
@@ -965,6 +982,11 @@ function draw(){
  $('ipsHelp').textContent=selected==='blue'?'Blå lagets ordinarie registreringar visas också i tabellen. Undvik att registrera samma händelse två gånger.':'Röda lagets registreringar ligger separat från seriematchens händelser.';
  rows(selected);
 }
+$('ipsGoalie').onchange=function(){
+ if(selected==='red')state.internalRedGoalie=this.value;
+ else state.goalkeeper=this.value;
+ save();draw();
+};
 $('ipsBlue').onclick=()=>{selected='blue';draw()};
 $('ipsRed').onclick=()=>{selected='red';draw()};
 for(const [type,label] of types){

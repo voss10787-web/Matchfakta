@@ -804,4 +804,65 @@ body.compact-matchboard #clockPanel .matchClockLayout #startClock:disabled::afte
   syncCompactBoard();
 })();
 </script>
+
+<style id="matchcoach-folding-style">
+section.panel.mc-foldable > h2{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+section.panel.mc-foldable > h2 > .mc-fold-button{
+ margin-left:auto;flex:0 0 auto;min-height:36px;
+ padding:5px 10px;font-size:13px;line-height:1.2;
+ background:#304861;color:#edf5ff;border:1px solid #58718c;
+ border-radius:9px;cursor:pointer;
+}
+section.panel.mc-foldable.mc-folded > :not(h2){display:none!important}
+section.panel.mc-foldable.mc-folded{padding-bottom:12px!important}
+</style>
+<script id="matchcoach-folding-script">
+(function(){
+ const key='matchcoach-section-folding-v1';
+ const sections=[
+  ['matchSquadPanel',false],['quickPanel',true],
+  ['swapPanel',false],['linesPanel',false],
+  ['eventsPanel',true],['coachExtras',false],
+  ['rosterPanel',false],['penaltyPanel',false],
+  ['livePanel',false],['analysisPanel',false],
+  ['periodPanel',false],['seasonPanel',false],
+  ['reportPanel',false],['trainingPanel',false],
+  ['matchSchedule',false]
+ ];
+ let saved={};
+ try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){}
+ function setup(){
+  sections.forEach(function(item){
+   const id=item[0], defaultOpen=item[1];
+   const panel=document.getElementById(id);
+   if(!panel || panel.classList.contains('mc-foldable'))return;
+   const heading=Array.from(panel.children).find(x=>/^H[1-6]$/.test(x.tagName));
+   if(!heading)return;
+   const button=document.createElement('button');
+   button.type='button';
+   button.className='mc-fold-button';
+   const open=Object.prototype.hasOwnProperty.call(saved,id)?!!saved[id]:defaultOpen;
+   panel.classList.add('mc-foldable');
+   function apply(isOpen){
+    panel.classList.toggle('mc-folded',!isOpen);
+    button.textContent=isOpen?'Fäll ihop ▲':'Visa ▼';
+    button.setAttribute('aria-expanded',String(isOpen));
+    button.setAttribute('aria-label',(isOpen?'Fäll ihop ':'Visa ')+heading.textContent.replace(/Visa ▼|Fäll ihop ▲/g,'').trim());
+   }
+   apply(open);
+   button.addEventListener('click',function(){
+    const next=panel.classList.contains('mc-folded');
+    apply(next);
+    saved[id]=next;
+    try{localStorage.setItem(key,JSON.stringify(saved))}catch(e){}
+   });
+   heading.appendChild(button);
+  });
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);
+ else setup();
+})();
+</script>
 </body></html>

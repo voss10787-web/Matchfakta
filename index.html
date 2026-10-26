@@ -797,4 +797,24 @@ const priorFinish=$('finishMatch').onclick;$('finishMatch').onclick=function(e){
 draw();
 })();
 </script>
+
+<style id="internalTestVisibilityFix">
+body:not(.internal-test-mode) #internalTestControls {display:none!important}
+</style>
+<script id="internalTestVisibilityFixScript">
+(function(){
+  const kind=document.getElementById('matchKind');
+  const panel=document.getElementById('internalTestControls');
+  if(!kind||!panel)return;
+  function sync(){
+    const internal=kind.value==='internal';
+    document.body.classList.toggle('internal-test-mode',internal);
+    panel.hidden=!internal;
+  }
+  kind.addEventListener('change',sync);
+  kind.addEventListener('input',sync);
+  document.getElementById('finishMatch')?.addEventListener('click',()=>setTimeout(sync,0));
+  sync();
+})();
+</script>
 </body></html>

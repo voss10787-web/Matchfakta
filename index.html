@@ -892,12 +892,12 @@ function ensure(){
  if(!Array.isArray(state.internalRedShifts))state.internalRedShifts=[];
 }
 function active(side){return side==='red'?state.internalRedActive:state.active}
-function stamp(){if(state.running)tick();return Math.max(0,Math.min(900,Number(state.seconds)||0))}
+function stamp(){if(state.running)tick();return Math.max(0,Math.min(900,Number(elapsed())||0))}
 function redShiftClose(){
  ensure();const a=state.internalRedActive;
  if(!a)return;
  const end=stamp();
- const duration=a.period===state.period?Math.max(0,end-(Number(a.start)||0)):Math.max(0,900-(Number(a.start)||0));
+ const duration=String(a.period)===String(state.period)?Math.max(0,end-(Number(a.start)||0)):Math.max(0,900-(Number(a.start)||0));
  if(duration>0)state.internalRedShifts.push({players:[...(a.players||[])],period:a.period,duration,start:a.start,end:a.start+duration});
 }
 function events(side){
@@ -910,24 +910,16 @@ function events(side){
  });
  return [...test,...native];
 }
-function choosePlayer(players,message,allowNone){
- const options=players.map((n,i)=>`${i+1}. ${n}`).join('\n');
- const answer=prompt(message+'\n'+options+(allowNone?'\n0. Utan spelare':''),'1');
- if(answer===null)return null;
- const num=Number(answer);
- if(!Number.isInteger(num)||num<0||num>players.length||(!allowNone&&num===0)){alert('Välj ett giltigt spelarnummer.');return null}
- return num===0?'':players[num-1];
-}
-function record(type){
+async function record(type){
  if(!internal())return;
  ensure();
  const a=active(selected),players=[...(a?.players||[])];
  if(!players.length){alert('Välj en femma för '+(selected==='red'?'Öjaby röd':'Öjaby blå')+' först.');return}
- const player=choosePlayer(players,'Välj spelare:',false);
+ const player=await window.mcPickPlayer(players,'Välj spelare',false);
  if(player===null)return;
  let assist='',minutes=0;
  if(type==='goal'){
-  assist=choosePlayer(players.filter(n=>n!==player),'Välj eventuell assist:',true);
+  assist=await window.mcPickPlayer(players.filter(n=>n!==player),'Välj eventuell assist',true);
   if(assist===null)return;
  }
  if(type==='penalty'){
@@ -943,7 +935,7 @@ function rows(side){
  const eventList=events(side);
  const segments=side==='red'?[...(state.internalRedShifts||[])]:[...(state.shifts||[])];
  const a=active(side);
- if(a){const t=stamp();segments.push({players:a.players||[],duration:a.period===state.period?Math.max(0,t-(a.start||0)):0})}
+ if(a){const t=stamp();segments.push({players:a.players||[],duration:String(a.period)===String(state.period)?Math.max(0,t-(Number(a.start)||0)):0})}
  const players=new Set([...roster.filter(p=>p.active).map(p=>p.name),...eventList.map(e=>e.player),...segments.flatMap(s=>s.players||[])]);
  const output=[];
  for(const name of players){
@@ -951,9 +943,9 @@ function rows(side){
   const ev=eventList.filter(e=>e.player===name);
   const count=type=>ev.filter(e=>e.type===type).length;
   const assists=eventList.filter(e=>e.assist===name).length;
-  const time=segments.filter(s=>(s.players||[]).includes(name)).reduce((sum,s)=>sum+Math.max(0,Number(s.duration)||0),0);
+  const time=side==='red'?(window.mcGetRedPlayerSeconds?.(name)||0):segments.filter(s=>(s.players||[]).includes(name)).reduce((sum,s)=>sum+Math.max(0,Number(s.duration)||0),0);
   const goals=count('goal');
-  output.push({name,goals,assists,time,html:`<tr><td></td><td>${goals}</td><td>${assists}</td><td>${goals+assists}</td><td>${count('shotOn')}</td><td>${count('shotOff')}</td><td>${count('shotBlocked')}</td><td>${count('block')}</td><td>${ev.reduce((sum,e)=>sum+(Number(e.minutes)||0),0)}</td><td>${fmt(time)}</td></tr>`});
+  output.push({name,goals,assists,time,html:`<tr><td></td><td>${goals}</td><td>${assists}</td><td>${goals+assists}</td><td>${count('shotOn')}</td><td>${count('shotOff')}</td><td>${count('shotBlocked')}</td><td>${count('block')}</td><td>${ev.reduce((sum,e)=>sum+(Number(e.minutes)||0),0)}</td><td>${Math.floor(time/60).toString().padStart(2,'0')}:${Math.floor(time%60).toString().padStart(2,'0')}</td></tr>`});
  }
  output.sort((a,b)=>(b.goals+b.assists)-(a.goals+a.assists)||b.time-a.time||a.name.localeCompare(b.name,'sv'));
  const body=$('ipsRows');body.replaceChildren();
@@ -985,19 +977,7 @@ $('ipsUndo').onclick=()=>{
  state.internalStatEvents.splice(index,1);save();draw();
 };
 // Följ röda lagets femmabyten utan att ändra den ordinarie statistikmotorn.
-const redButtons=$('internalRedButtons');
-if(redButtons){
- redButtons.addEventListener('click',e=>{
-  if(!e.target.closest('button')||!internal())return;
-  // Capture the old line before the existing click handler changes it.
- },true);
- // Capture old shift when user selects another lineup, then let the existing handler work.
- redButtons.addEventListener('click',e=>{
-  if(!e.target.closest('button')||!internal())return;
-  const before=state.internalRedActive;
-  if(before){redShiftClose();save()}
- },true);
-}
+window.mcCloseRedShift=redShiftClose;
 const finish=$('finishMatch');
 finish.addEventListener('click',()=>{
  // After the original confirmation handler runs, a completed internmatch has a new state object.
@@ -1006,7 +986,7 @@ finish.addEventListener('click',()=>{
 const originalRender=render;
 render=function(){originalRender();draw()};
 $('matchKind').addEventListener('change',()=>setTimeout(draw,0));
-setInterval(()=>{if(internal()&&state.running)rows(selected)},1000);
+setInterval(()=>{if(internal())rows(selected)},1000);
 draw();
 })();
 </script>
@@ -1020,4 +1000,68 @@ section.panel.mc-foldable > h2 > .mc-fold-button{
 }
 section.panel.mc-foldable > h2{gap:5px!important}
 </style>
+
+<style id="ipsPlayerPickerStyle">
+#ipsPicker[hidden]{display:none!important}
+#ipsPicker{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.77);display:flex;align-items:center;justify-content:center;padding:15px}
+#ipsPicker .ips-dialog{width:min(100%,460px);max-height:86vh;overflow-y:auto;background:#192b40;border:1px solid #58718c;border-radius:16px;padding:16px}
+#ipsPicker .ips-players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#ipsPicker .ips-players button{min-height:49px;padding:8px 5px;white-space:normal}
+#ipsPicker .ips-other{margin:12px 0}
+</style>
+<div id="ipsPicker" hidden role="dialog" aria-modal="true" aria-label="Välj spelare">
+<div class="ips-dialog"><h2 id="ipsPickerTitle">Välj spelare</h2><div class="ips-players" id="ipsPickerPlayers"></div>
+<button type="button" class="secondary ips-other" id="ipsPickerOther">Visa hela matchtruppen</button>
+<button type="button" class="secondary" id="ipsPickerCancel">Avbryt</button></div></div>
+<script id="ipsPlayerPickerScript">
+(function(){
+const picker=document.getElementById('ipsPicker'),buttons=document.getElementById('ipsPickerPlayers'),title=document.getElementById('ipsPickerTitle'),other=document.getElementById('ipsPickerOther');
+let resolveSelection=null;
+function finish(value){picker.hidden=true;const resolve=resolveSelection;resolveSelection=null;if(resolve)resolve(value)}
+document.getElementById('ipsPickerCancel').onclick=()=>finish(null);
+picker.addEventListener('click',e=>{if(e.target===picker)finish(null)});
+window.mcPickPlayer=function(players,message,allowNone){
+ return new Promise(resolve=>{
+  if(resolveSelection)finish(null);
+  resolveSelection=resolve;picker.hidden=false;title.textContent=message;
+  const main=[...new Set(players.filter(Boolean))];
+  const all=typeof roster!=='undefined'?roster.filter(p=>p.active&&!p.goalie).map(p=>p.name):main;
+  function draw(list){
+   buttons.replaceChildren();
+   if(allowNone){const b=document.createElement('button');b.type='button';b.textContent='Ingen assist';b.onclick=()=>finish('');buttons.append(b)}
+   list.forEach(name=>{const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>finish(name);buttons.append(b)})
+  }
+  draw(main);
+  other.hidden=all.every(name=>main.includes(name));
+  other.textContent='Visa hela matchtruppen';
+  other.onclick=()=>{draw(all);other.hidden=true};
+ });
+};
+})();
+</script>
+<script id="ipsRedClockFix">
+(function(){
+let previous=null,previousPeriod=null,previousRunning=false,previousTeam='';
+function sync(){
+ if(typeof state==='undefined'||state.matchKind!=='internal'){previous=null;return}
+ const a=state.internalRedActive;
+ const time=Number(state.seconds)||0;
+ const period=state.period;
+ if(!a){previous=time;previousPeriod=period;previousRunning=!!state.running;previousTeam='';return}
+ if(!Array.isArray(state.internalRedPlayerSeconds))state.internalRedPlayerSeconds=[];
+ const signature=(a.players||[]).join('|');
+ if(previous!==null&&previousPeriod===period&&previousRunning&&signature===previousTeam&&time>=previous){
+  const delta=Math.min(time-previous,2);
+  if(delta>0)for(const name of a.players||[]){
+   let entry=state.internalRedPlayerSeconds.find(x=>x.name===name);
+   if(!entry){entry={name,seconds:0};state.internalRedPlayerSeconds.push(entry)}
+   entry.seconds+=delta;
+  }
+ }
+ previous=time;previousPeriod=period;previousRunning=!!state.running;previousTeam=signature;
+}
+setInterval(sync,200);
+window.mcGetRedPlayerSeconds=name=>(state.internalRedPlayerSeconds||[]).find(x=>x.name===name)?.seconds||0;
+})();
+</script>
 </body></html>

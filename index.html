@@ -687,4 +687,62 @@ draw();
  renderKeeper();
 })();
 </script>
+<style>
+/* Samma matchtavla i båda lägena, med klockan mellan matchslut och start. */
+#clockPanel .row.matchClockLayout{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#clockPanel .matchClockLayout #finishMatch{order:1;flex:0 1 auto;padding:10px 8px;font-size:clamp(11px,3vw,15px)}
+#clockPanel .matchClockLayout #clock{order:2;flex:0 0 auto;font-size:clamp(25px,7vw,40px)}
+#clockPanel .matchClockLayout #startClock{order:3;flex:0 1 auto;padding:10px 8px;font-size:clamp(11px,3vw,15px)}
+#clockPanel .matchClockLayout .clockBreak{order:4;flex-basis:100%;height:0}
+#clockPanel .matchClockLayout .periodCorner{order:5}
+#clockPanel .matchClockLayout #resetClock{order:6}
+#clockPanel .matchClockLayout .matchKindPicker{order:9;flex-basis:100%;margin-top:5px}
+#clockPanel .matchClockLayout #live{order:8}
+#clockPanel .matchClockLayout .typeBreak{order:7;flex-basis:100%;height:0}
+#internalTeams{margin-top:14px}
+#internalTeams[hidden],#internalEditor[hidden]{display:none!important}
+.internalTeamGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.internalTeam{border:1px solid #49637f;border-radius:12px;padding:9px;min-width:0}
+.internalTeam.blue{background:#18365b}.internalTeam.red{background:#492932}
+.internalTeam h3{font-size:15px;margin:2px 0 10px}
+.internalTeam button{width:100%;margin:0 0 7px;font-size:13px;min-height:42px;padding:6px 3px}
+.internalTeam button.selected{background:#087f62;color:white}
+#internalEditor{margin-top:12px}
+.internalLineEdit{padding:9px;border:1px solid #435d79;border-radius:9px;margin:8px 0}
+.internalLineEdit strong{display:block;margin-bottom:7px}
+.internalLineEdit select{width:100%;max-width:100%;margin:3px 0;font-size:13px}
+#internalLineStatus{margin-top:8px}
+</style>
+<script id="internalTwoTeamsEnhancement">
+(function(){
+'use strict';
+const get=id=>document.getElementById(id);
+const clockRow=get('clock').parentElement;
+clockRow.classList.add('matchClockLayout');
+const break1=document.createElement('span');break1.className='clockBreak';break1.setAttribute('aria-hidden','true');clockRow.append(break1);
+const break2=document.createElement('span');break2.className='typeBreak';break2.setAttribute('aria-hidden','true');clockRow.append(break2);
+// Move only the existing controls: no duplicate buttons, no event handlers lost.
+const kind=get('matchKind');const kindBox=kind.closest('label')||kind.parentElement;
+kindBox.classList.add('matchKindPicker');clockRow.append(kindBox);
+const namesForLine=['Femma 1','Femma 2','Femma 3','Extra','PP1','BP1','PP2','BP2'];
+const quick=get('quickLineButtons');
+const panel=document.createElement('div');panel.id='internalTeams';panel.hidden=true;
+panel.innerHTML='<div class="internalTeamGrid"><div class="internalTeam blue"><h3>🔵 Öjaby blå</h3><div id="internalBlueButtons"></div><div id="internalBlueStatus" class="help"></div></div><div class="internalTeam red"><h3>🔴 Öjaby röd</h3><div id="internalRedButtons"></div><div id="internalRedStatus" class="help"></div></div></div><p class="help">Välj en femma i varje lag. Båda lagen kan ha en femma inne samtidigt. De vanliga seriematchfemmorna ändras inte.</p>';
+quick.after(panel);
+const editor=document.createElement('div');editor.id='internalEditor';editor.hidden=true;
+editor.innerHTML='<h3>🔴 Röda lagets femmor</h3><p class="help">Sätt upp femmorna för internmatchen här. Blå lagets femmor väljs som vanligt under Kedjor. Positionerna är back, back, center, vänster och höger forward.</p><div id="internalRedEditor"></div><p class="help" id="internalLineStatus"></p>';
+get('linesPanel').append(editor);
+function internal(){return state.matchKind==='internal'}
+function init(){if(!Array.isArray(state.internalRedLines))state.internalRedLines=Array.from({length:8},()=>['','','','','']);while(state.internalRedLines.length<8)state.internalRedLines.push(['','','','','']);}
+function eligible(){return roster.filter(p=>p.active&&!p.goalie).map(p=>p.name)}
+function redEditor(){init();const root=get('internalRedEditor');root.replaceChildren();const all=eligible();const positions=['Back 1','Back 2','Center','Vänster forward','Höger forward'];state.internalRedLines.forEach((line,i)=>{const box=document.createElement('div');box.className='internalLineEdit';const title=document.createElement('strong');title.textContent=namesForLine[i];box.append(title);for(let j=0;j<5;j++){const label=document.createElement('label');label.textContent=positions[j]+' ';const sel=document.createElement('select');for(const name of ['',...all]){const option=document.createElement('option');option.value=name;option.textContent=name||'– tom –';sel.append(option)}sel.value=line[j]||'';sel.onchange=()=>{state.internalRedLines[i][j]=sel.value;save();drawTeams()};label.append(sel);box.append(label)}root.append(box)})}
+function setRedLine(i){init();const players=[...new Set(state.internalRedLines[i].filter(Boolean))];if(!players.length){alert('Välj spelare till röda lagets femma under Kedjor först.');return}const missing=players.filter(n=>!eligible().includes(n));if(missing.length){alert('Spelare saknas i dagens matchtrupp: '+missing.join(', '));return}if(state.running)tick();state.internalRedActive={line:i,players,start:elapsed(),period:state.period};save();drawTeams()}
+function drawTeams(){panel.hidden=!internal();editor.hidden=!internal();quick.style.display=internal()?'none':'';get('specialTeamsQuick').style.display=internal()?'none':'';if(!internal())return;init();for(const [side,id] of [['blue','internalBlueButtons'],['red','internalRedButtons']]){const root=get(id);root.replaceChildren();for(let i=0;i<8;i++){const b=document.createElement('button');b.type='button';b.textContent=namesForLine[i];b.className=(side==='blue'?state.active?.line===i:state.internalRedActive?.line===i)?'selected':'secondary';b.onclick=()=>{if(side==='blue')switchLine(i);else setRedLine(i);drawTeams()};root.append(b)}}get('internalBlueStatus').textContent=state.active?'Inne: '+state.active.players.join(', '):'Ingen femma inne';get('internalRedStatus').textContent=state.internalRedActive?'Inne: '+state.internalRedActive.players.join(', '):'Ingen femma inne'}
+const oldKindChange=kind.onchange;kind.onchange=function(e){const before=state.matchKind;oldKindChange?.call(this,e);if(before!==state.matchKind){if(state.running)tick();state.internalRedActive=null;save()}drawTeams();redEditor()};
+const oldRender=render;render=function(){oldRender();drawTeams()};
+// Red line stays selected across blue substitutions. Reset only the active internal-match red line when finishing.
+const finish=get('finishMatch');const oldFinish=finish.onclick;finish.onclick=function(e){const wasInternal=internal();const oldState=state;oldFinish?.call(this,e);if(wasInternal&&state!==oldState){state.internalRedActive=null;save();drawTeams()}};
+redEditor();drawTeams();
+})();
+</script>
 </body></html>

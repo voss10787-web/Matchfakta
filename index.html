@@ -120,7 +120,15 @@
 #quickPanel .quickSpecial button{min-height:40px;padding:6px 5px;font-size:12px}
 #quickPanel #quickPicker button,#quickPanel #quickPlayers button{min-height:46px}
 </style>
-<style id="mc-five-style">#mcFivePanel table,#mcPrepPanel table{font-size:12px}#mcFivePanel td,#mcFivePanel th{padding:7px 8px}#mcFivePanel h3{margin-top:20px}#mcPrepPanel .mc-template-row{padding:8px 0;border-bottom:1px solid #456}#mcFivePanel[hidden]{display:none!important}</style><style id="mc-bp-four-slots">#lines .positionFive:has(.positionSlot:nth-child(4):last-child) .positionSlot:nth-child(3){grid-column:auto}</style></head><body><main><h1 class="compactTitle">🏑 Matchcoach</h1><section class="panel" id="clockPanel"><div class="matchFieldsHidden" hidden><label>Motstånd <input id="opponent" placeholder="Motståndare"></label><label>Datum <input type="date" id="date"></label><label>Period <select id="period"><option>1</option><option>2</option><option>3</option><option>Förlängning</option></select></label></div><div class="row"><div class="clock" id="clock">00:00</div><button id="startClock">Starta klockan</button><button class="secondary" id="resetClock">Nollställ periodklockan</button><button type="button" class="danger" id="finishMatch">🏁 Avsluta match</button><label class="matchKindPicker" for="matchKind">Matchtyp <select id="matchKind" aria-label="Välj matchtyp"><option value="series">Seriematch</option><option value="internal">Internmatch</option></select></label><span class="tag" id="live">Ingen femma inne</span><label class="periodCorner" for="periodQuick">Period <select id="periodQuick" aria-label="Välj period"><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="Förlängning">Förl.</option></select></label></div><p class="help">Matchklockan räknar upp från 00:00 till 15:00 per period (3 × 15 minuter). När du trycker ”IN” avslutas föregående femmas byte och den nya femman startar direkt. Pausa klockan vid avblåsningar om du vill mäta effektiv speltid.</p></section><section class="panel" id="liveScoreboard" aria-label="Livetavla"><div class="scoreTop"><span>ÖJABY</span><span id="boardPeriod" hidden>PERIOD 1</span><span id="boardOpponent">MOTSTÅNDARE</span></div><div class="scoreNumbers"><span id="boardOwn">0</span><span class="scoreDash">–</span><span id="boardAway">0</span></div><div class="scoreTime" id="boardClock" hidden>00:00</div><div class="scorePenalties"><div><strong>ÖJABY · UTVISNINGAR</strong><div id="boardOwnPen">Inga aktiva</div></div><div><strong>MOTSTÅNDARE · UTVISNINGAR</strong><div id="boardOppPen">Inga aktiva</div></div></div><p class="help" style="margin-bottom:0">Utvisningstiderna följer matchklockan. Vid mål får du bekräfta eventuell kvittning.</p></section><section class="panel" id="matchSquadPanel">
+<style id="mc-five-style">#mcFivePanel table,#mcPrepPanel table{font-size:12px}#mcFivePanel td,#mcFivePanel th{padding:7px 8px}#mcFivePanel h3{margin-top:20px}#mcPrepPanel .mc-template-row{padding:8px 0;border-bottom:1px solid #456}#mcFivePanel[hidden]{display:none!important}</style><style id="mc-bp-four-slots">#lines .positionFive:has(.positionSlot:nth-child(4):last-child) .positionSlot:nth-child(3){grid-column:auto}</style><style id="mc-dual-view-style">
+#mcViewNav{position:sticky;top:0;z-index:65;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:7px;background:#14263d;border:1px solid #415772;border-radius:12px;margin:10px 0 5px}
+#mcViewNav button{padding:11px 7px;min-height:44px;background:#304760;color:#e3edfa;border:1px solid #516a86;border-radius:9px;font-weight:700}
+#mcViewNav button[aria-selected="true"]{background:#167e62;color:white;border-color:#36ad8d}
+#mcViewHelp{text-align:center;color:#aabbd0;font-size:11px;margin:0 0 8px}
+.mc-view-page[hidden]{display:none!important}
+#mcBackQuick{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));right:12px;z-index:80;border-radius:30px;padding:10px 13px;background:#206e91;color:white;border:1px solid #7db6cf;box-shadow:0 4px 15px #0009}
+#mcBackQuick[hidden]{display:none!important}
+</style></head><body><main><h1 class="compactTitle">🏑 Matchcoach</h1><section class="panel" id="clockPanel"><div class="matchFieldsHidden" hidden><label>Motstånd <input id="opponent" placeholder="Motståndare"></label><label>Datum <input type="date" id="date"></label><label>Period <select id="period"><option>1</option><option>2</option><option>3</option><option>Förlängning</option></select></label></div><div class="row"><div class="clock" id="clock">00:00</div><button id="startClock">Starta klockan</button><button class="secondary" id="resetClock">Nollställ periodklockan</button><button type="button" class="danger" id="finishMatch">🏁 Avsluta match</button><label class="matchKindPicker" for="matchKind">Matchtyp <select id="matchKind" aria-label="Välj matchtyp"><option value="series">Seriematch</option><option value="internal">Internmatch</option></select></label><span class="tag" id="live">Ingen femma inne</span><label class="periodCorner" for="periodQuick">Period <select id="periodQuick" aria-label="Välj period"><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="Förlängning">Förl.</option></select></label></div><p class="help">Matchklockan räknar upp från 00:00 till 15:00 per period (3 × 15 minuter). När du trycker ”IN” avslutas föregående femmas byte och den nya femman startar direkt. Pausa klockan vid avblåsningar om du vill mäta effektiv speltid.</p></section><section class="panel" id="liveScoreboard" aria-label="Livetavla"><div class="scoreTop"><span>ÖJABY</span><span id="boardPeriod" hidden>PERIOD 1</span><span id="boardOpponent">MOTSTÅNDARE</span></div><div class="scoreNumbers"><span id="boardOwn">0</span><span class="scoreDash">–</span><span id="boardAway">0</span></div><div class="scoreTime" id="boardClock" hidden>00:00</div><div class="scorePenalties"><div><strong>ÖJABY · UTVISNINGAR</strong><div id="boardOwnPen">Inga aktiva</div></div><div><strong>MOTSTÅNDARE · UTVISNINGAR</strong><div id="boardOppPen">Inga aktiva</div></div></div><p class="help" style="margin-bottom:0">Utvisningstiderna följer matchklockan. Vid mål får du bekräfta eventuell kvittning.</p></section><nav id="mcViewNav" aria-label="Välj vy" role="tablist"><button id="mcMatchTab" type="button" role="tab" aria-selected="true">🏑 Match</button><button id="mcAnalysisTab" type="button" role="tab" aria-selected="false">📊 Analys</button></nav><div id="mcViewHelp">Svep åt vänster eller höger för att växla mellan Match och Analys</div><div id="mcMatchView" class="mc-view-page" role="tabpanel"></div><div id="mcAnalysisView" class="mc-view-page" role="tabpanel" hidden></div><section class="panel" id="matchSquadPanel">
 <h2>👥 Matchtrupp – före match</h2>
 <p class="help">Välj vilka spelare som är uttagna till dagens match. Spelare som inte är med visas inte som val vid nya händelser eller byten. Dina sparade femmor behålls till nästa match.</p>
 <div class="row"><button type="button" class="secondary" id="squadAll">Alla med</button><button type="button" class="secondary" id="squadNone">Ingen med</button></div>
@@ -1446,110 +1454,66 @@ const oldSeason=renderSeason;renderSeason=function(){oldSeason();draw5()};
 drawTemplates();draw5();
 })();
 </script>
-<style id="mc-dual-view-style">
-#mcViewNav{position:sticky;top:var(--mc-nav-top,0px);z-index:65;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:7px;background:#0b1728;border:1px solid #31445e;border-radius:12px;margin:9px 0}
-#mcViewNav button{padding:10px 8px;min-height:43px;background:#263c56;color:#d9e7f6}
-#mcViewNav button[aria-selected="true"]{background:#159268;color:#fff}
-#mcViewHelp{font-size:11px;text-align:center;color:#a9bdd4;margin:-4px 0 6px}
-.mc-view-page[hidden]{display:none!important}
-.mc-view-page{min-width:0}
-#mcBackQuick{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));right:14px;z-index:80;border-radius:999px;padding:11px 14px;box-shadow:0 5px 18px #0009;font-size:13px}
-#mcBackQuick[hidden]{display:none!important}
-@media(max-width:600px){#mcViewNav{gap:5px}#mcViewNav button{font-size:14px}}
-</style>
+
 <script id="mc-dual-view">
 (function(){
 'use strict';
-const $=id=>document.getElementById(id);
+function init(){
+const byId=id=>document.getElementById(id);
 const main=document.querySelector('main');
-if(!main||!$('quickPanel'))return;
-const nav=document.createElement('div');nav.id='mcViewNav';nav.setAttribute('role','tablist');
-const matchBtn=document.createElement('button'),analysisBtn=document.createElement('button');
-matchBtn.type=analysisBtn.type='button';
-matchBtn.textContent='🏑 Match';analysisBtn.textContent='📊 Analys';
-matchBtn.setAttribute('role','tab');analysisBtn.setAttribute('role','tab');
-matchBtn.id='mcMatchTab';analysisBtn.id='mcAnalysisTab';
-nav.append(matchBtn,analysisBtn);
-const help=document.createElement('div');help.id='mcViewHelp';help.textContent='Svep åt sidan för att växla vy · tryck på flikarna som alternativ';
-const match=document.createElement('div'),analysis=document.createElement('div');
-match.id='mcMatchView';analysis.id='mcAnalysisView';
-match.className=analysis.className='mc-view-page';
-match.setAttribute('role','tabpanel');analysis.setAttribute('role','tabpanel');
-match.setAttribute('aria-labelledby','mcMatchTab');analysis.setAttribute('aria-labelledby','mcAnalysisTab');
-const scoreboard=$('liveScoreboard'),clock=$('clockPanel');
-// The match clock must remain at the very top, immediately before the live scoreboard.
-// Keep both outside the swipe views so neither is hidden or moved below analysis.
-if(clock&&scoreboard){
- scoreboard.before(clock);
- scoreboard.after(nav,help,match,analysis);
-}else if(clock){
- clock.after(nav,help,match,analysis);
-}else{
- main.prepend(nav,help,match,analysis);
-}
-const matchIds=new Set(['matchSquadPanel','quickPanel','swapPanel','linesPanel','eventsPanel','coachExtras','penaltyPanel','livePanel','mcTimeWarningPanel']);
-const analysisIds=new Set(['matchSchedule','rosterPanel','mcOverviewPanel','mcPlayerStatsPanel','mcEventLogPanel','analysisPanel','periodPanel','seasonPanel','reportPanel','trainingPanel','mcFivePanel','mcPrepPanel','internalPlayerStats']);
-function movePanel(id){
- const el=$(id);if(!el)return;
- const dest=matchIds.has(id)?match:analysis;
- if(el.parentElement!==dest)dest.append(el);
-}
-for(const id of matchIds)movePanel(id);
-for(const id of analysisIds)movePanel(id);
+const match=byId('mcMatchView'),analysis=byId('mcAnalysisView');
+const nav=byId('mcViewNav'),matchBtn=byId('mcMatchTab'),analysisBtn=byId('mcAnalysisTab');
+if(!main||!match||!analysis||!nav)return;
+const matchIds=['matchSquadPanel','quickPanel','swapPanel','linesPanel','eventsPanel','coachExtras','penaltyPanel','livePanel','mcTimeWarningPanel'];
+const analysisIds=['matchSchedule','rosterPanel','mcOverviewPanel','mcPlayerStatsPanel','mcEventLogPanel','analysisPanel','periodPanel','seasonPanel','reportPanel','trainingPanel','mcFivePanel','mcPrepPanel','internalPlayerStats'];
+for(const id of matchIds){const el=byId(id);if(el)match.appendChild(el)}
+for(const id of analysisIds){const el=byId(id);if(el)analysis.appendChild(el)}
 let current='match';
-function setView(next,scroll=false){
- current=next==='analysis'?'analysis':'match';
- match.hidden=current!=='match';analysis.hidden=current!=='analysis';
- matchBtn.setAttribute('aria-selected',String(current==='match'));
- analysisBtn.setAttribute('aria-selected',String(current==='analysis'));
- matchBtn.tabIndex=current==='match'?0:-1;analysisBtn.tabIndex=current==='analysis'?0:-1;
- if(scroll)nav.scrollIntoView({block:'start',behavior:'smooth'});
- updateBack();
-}
-matchBtn.onclick=()=>setView('match',true);
-analysisBtn.onclick=()=>setView('analysis',true);
+const back=document.createElement('button');back.type='button';back.id='mcBackQuick';back.textContent='⚡ Snabbcoach';back.hidden=true;document.body.appendChild(back);
 function updateBack(){
- const quick=$('quickPanel'),back=$('mcBackQuick');
- if(!quick||!back)return;
- back.hidden=current!=='match'||quick.getBoundingClientRect().bottom>window.innerHeight*.45;
+const quick=byId('quickPanel');
+back.hidden=current!=='match'||!quick||quick.getBoundingClientRect().bottom>innerHeight*.5;
 }
-const back=document.createElement('button');back.id='mcBackQuick';back.type='button';
-back.textContent='⚡ Snabbcoach';back.hidden=true;
-back.onclick=()=>{setView('match');$('quickPanel').scrollIntoView({block:'start',behavior:'smooth'})};
-document.body.append(back);
+function setView(v,goTop){
+current=v==='analysis'?'analysis':'match';
+match.hidden=current!=='match';analysis.hidden=current!=='analysis';
+matchBtn.setAttribute('aria-selected',String(current==='match'));
+analysisBtn.setAttribute('aria-selected',String(current==='analysis'));
+if(goTop)nav.scrollIntoView({block:'start',behavior:'smooth'});
+updateBack();
+}
+matchBtn.addEventListener('click',()=>setView('match',false));
+analysisBtn.addEventListener('click',()=>setView('analysis',false));
+back.addEventListener('click',()=>{setView('match',false);byId('quickPanel')?.scrollIntoView({block:'start',behavior:'smooth'})});
 window.addEventListener('scroll',updateBack,{passive:true});
 window.addEventListener('resize',updateBack,{passive:true});
-// Only horizontal swipes beginning on non-interactive page areas change tabs.
-// Tables, forms, buttons and other scrollable regions retain their own gestures.
-let start=null;
-// Listen on the whole document: the panels and scoreboard are not necessarily
-// descendants of the same container after the two-view layout is assembled.
+// Touch tracking on document allows swiping over ordinary buttons and panels.
+// Never cancel native scrolling; switch only after a decisive horizontal gesture.
+let touchStart=null;
 document.addEventListener('touchstart',e=>{
- if(e.touches.length!==1){start=null;return;}
+ if(e.touches.length!==1){touchStart=null;return}
  const target=e.target;
- if(!target.closest('#mcMatchView,#mcAnalysisView,#mcViewNav,#mcViewHelp')){start=null;return;}
- // Never hijack sliders, text entry or a horizontally scrollable table.
- if(target.closest('input,select,textarea,[contenteditable],.scroll,table,[role="dialog"]')){start=null;return;}
- const touch=e.touches[0];
- start={x:touch.clientX,y:touch.clientY,time:Date.now()};
-},{passive:true,capture:true});
+ if(!target.closest('#mcMatchView,#mcAnalysisView,#mcViewNav,#mcViewHelp')){touchStart=null;return}
+ if(target.closest('input,textarea,select,table,[contenteditable],.scroll,[role="dialog"]')){touchStart=null;return}
+ const t=e.touches[0];touchStart={x:t.clientX,y:t.clientY,at:Date.now()};
+},{capture:true,passive:true});
 document.addEventListener('touchend',e=>{
- if(!start||e.changedTouches.length!==1)return;
- const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
- if(Math.abs(dx)>=65&&Math.abs(dx)>Math.abs(dy)*1.35&&Date.now()-start.time<1400){
-  if(dx<0&&current==='match')setView('analysis',true);
-  else if(dx>0&&current==='analysis')setView('match',true);
+ if(!touchStart||e.changedTouches.length!==1)return;
+ const t=e.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;
+ if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.35&&Date.now()-touchStart.at<1600){
+ if(dx<0&&current==='match')setView('analysis',true);
+ else if(dx>0&&current==='analysis')setView('match',true);
  }
- start=null;
-},{passive:true,capture:true});
-document.addEventListener('touchcancel',()=>start=null,{passive:true,capture:true});
-// Dynamic internmatch panel is created later; move it into analysis when available.
+ touchStart=null;
+},{capture:true,passive:true});
+document.addEventListener('touchcancel',()=>touchStart=null,{capture:true,passive:true});
 const observer=new MutationObserver(()=>{
- const dynamic=$('internalPlayerStats');
- if(dynamic&&dynamic.parentElement!==analysis)analysis.append(dynamic);
+ const dynamic=byId('internalPlayerStats');
+ if(dynamic&&dynamic.parentElement!==analysis)analysis.appendChild(dynamic);
 });
 observer.observe(main,{childList:true,subtree:true});
-setView('match');
+setView('match',false);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
-</script>
-</body></html>
+</script></body></html>

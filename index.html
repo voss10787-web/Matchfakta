@@ -1477,8 +1477,16 @@ match.className=analysis.className='mc-view-page';
 match.setAttribute('role','tabpanel');analysis.setAttribute('role','tabpanel');
 match.setAttribute('aria-labelledby','mcMatchTab');analysis.setAttribute('aria-labelledby','mcAnalysisTab');
 const scoreboard=$('liveScoreboard'),clock=$('clockPanel');
-const anchor=scoreboard||clock;
-anchor.after(nav,help,match,analysis);
+// The match clock must remain at the very top, immediately before the live scoreboard.
+// Keep both outside the swipe views so neither is hidden or moved below analysis.
+if(clock&&scoreboard){
+ scoreboard.before(clock);
+ scoreboard.after(nav,help,match,analysis);
+}else if(clock){
+ clock.after(nav,help,match,analysis);
+}else{
+ main.prepend(nav,help,match,analysis);
+}
 const matchIds=new Set(['matchSquadPanel','quickPanel','swapPanel','linesPanel','eventsPanel','coachExtras','penaltyPanel','livePanel','mcTimeWarningPanel']);
 const analysisIds=new Set(['matchSchedule','rosterPanel','mcOverviewPanel','mcPlayerStatsPanel','mcEventLogPanel','analysisPanel','periodPanel','seasonPanel','reportPanel','trainingPanel','mcFivePanel','mcPrepPanel','internalPlayerStats']);
 function movePanel(id){

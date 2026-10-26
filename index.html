@@ -573,7 +573,10 @@ draw();
 .teamQuickGroup.own{background:#153c65;border-color:#3983c9}
 .teamQuickGroup.opp{background:#552b38;border-color:#bb6477}
 .teamQuickGroup h3{text-align:center;font-size:15px;margin:3px 0 6px}
-.teamQuickGroup button{width:100%;min-height:46px;font-size:12px;padding:8px 4px;white-space:normal}
+.teamQuickGroup button{width:100%;min-height:54px;font-size:12px;padding:8px 4px;white-space:normal}
+.teamQuickGroup{gap:8px}
+.teamQuickGroup h3{min-height:24px}
+.teamQuickGrid #quickBlock[hidden]{display:none!important}
 #goaliePanel .row{margin-top:10px}
 #goaliePanel select{max-width:100%}
 #goaliePanel table{width:100%;font-size:12px}
@@ -593,12 +596,12 @@ draw();
  own.className='teamQuickGroup own';opp.className='teamQuickGroup opp';
  own.innerHTML='<h3>🔵 ÖJABY</h3>';opp.innerHTML='<h3>🔴 MOTSTÅNDARE</h3>';
  grid.append(own,opp);
- for(const id of ['quickGoal','quickShotOn','quickShotOff','quickShotBlocked','quickBlock'])own.append(el(id));
+ for(const id of ['quickGoal','quickShotOn','quickShotOff','quickShotBlocked'])own.append(el(id));
  for(const id of ['quickAgainst','quickOppShot','quickPenalty'])opp.append(el(id));
  el('quickGoal').textContent='🥅 Mål';el('quickAgainst').textContent='🥅 Mål';
  el('quickShotOn').textContent='🎯 Skott på mål';el('quickShotOff').textContent='↗️ Skott utanför';
  el('quickShotBlocked').textContent='🧱 Skott i täck';el('quickBlock').textContent='🛡️ Täckt skott';
- el('quickOppShot').textContent='🧤 Räddning';
+ el('quickOppShot').textContent='🎯 Skott på mål';
  const addOpponentEvent=(type,saveEvent=false)=>{
    const e={period:state.period,time:elapsed(),type,players:state.active?.players||[],line:state.active?.line??null,mode:state.mode,scorer:'',assist:'',goalie:state.goalkeeper||'',quick:true};
    if(saveEvent)e.savedByGoalie=true;
@@ -608,12 +611,20 @@ draw();
  // A save is a shot on target; a conceded goal also counts as a shot on target in keeper statistics.
  el('quickOppShot').onclick=()=>{if(!state.goalkeeper)return alert('Välj målvakt först.');addOpponentEvent('Motståndarskott på mål',true)};
  const extra=(title,action)=>{const b=document.createElement('button');b.type='button';b.textContent=title;b.onclick=action;return b};
- opp.append(extra('↗️ Skott utanför',()=>addOpponentEvent('Motståndarskott utanför')));
- opp.append(extra('🧱 Skott i täck',()=>addOpponentEvent('Motståndarskott i täck')));
- opp.append(extra('🛡️ Täckt skott',()=>addOpponentEvent('Motståndare täckt skott')));
+ // Opponent's blocked shot is credited to the Öjaby player who blocked it.
+ // Reuse the existing player picker and 'Täckt skott' event type, avoiding double counting.
+ const oppShotOff=extra('↗️ Skott utanför',()=>addOpponentEvent('Motståndarskott utanför'));
+ const oppBlocked=extra('🧱 Skott i täck',()=>el('quickBlock').click());
+ // Keep the legacy button in the DOM because the quick picker and other scripts reference it.
+ el('quickBlock').hidden=true;
+ grid.append(el('quickBlock'));
+ // Place the five controls in matching order in each column.
+ own.insertBefore(ownPenaltyPlaceholder(),own.children[2]);
+ function ownPenaltyPlaceholder(){const b=document.createElement('span');b.id='ownPenaltySlot';return b;}
+ opp.append(oppShotOff,oppBlocked);
  // Existing penalty form supports both teams; these shortcuts preselect the correct team.
- const ownPenalty=extra('⏱️ Utvisning',()=>{if(state.running){tick();state.running=false;clearInterval(timer);timer=null;save();render()}el('penTeam').value='own';el('penTeam').dispatchEvent(new Event('change'));el('penaltyPanel').scrollIntoView({block:'start',behavior:'smooth'})});own.append(ownPenalty);
- const opponentPenalty=el('quickPenalty');opponentPenalty.onclick=()=>{if(state.running){tick();state.running=false;clearInterval(timer);timer=null;save();render()}el('penTeam').value='opp';el('penTeam').dispatchEvent(new Event('change'));el('penaltyPanel').scrollIntoView({block:'start',behavior:'smooth'});};
+ const ownPenalty=extra('⏱️ Utvisning',()=>{if(state.running){tick();state.running=false;clearInterval(timer);timer=null;save();render()}el('penTeam').value='own';el('penTeam').dispatchEvent(new Event('change'));el('penaltyPanel').scrollIntoView({block:'start',behavior:'smooth'})});own.replaceChild(ownPenalty,el('ownPenaltySlot'));
+ const opponentPenalty=el('quickPenalty');opp.insertBefore(opponentPenalty,el('quickOppShot'));opponentPenalty.onclick=()=>{if(state.running){tick();state.running=false;clearInterval(timer);timer=null;save();render()}el('penTeam').value='opp';el('penTeam').dispatchEvent(new Event('change'));el('penaltyPanel').scrollIntoView({block:'start',behavior:'smooth'});};
  const keeperNames=()=>roster.filter(p=>p.active&&p.goalie).map(p=>p.name);
  function ensure(){if(!state.goalieTimes||typeof state.goalieTimes!=='object')state.goalieTimes={};}
  function keeperTime(name){ensure();return Number(state.goalieTimes[name]||0)}

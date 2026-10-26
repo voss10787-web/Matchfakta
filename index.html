@@ -588,7 +588,7 @@ draw();
  const el=id=>document.getElementById(id);
  const goaliePanel=document.createElement('section');goaliePanel.id='goaliePanel';goaliePanel.className='panel';
  goaliePanel.innerHTML='<h2>🥅 Målvakter – start och byte</h2><p class="help">Välj målvakt före matchen. Vid byte sparas varje målvakts speltid. Registrera räddningar för att få räddningsprocent.</p><div class="row"><label>Målvakt i mål <select id="keeperSelect"></select></label><button id="keeperSet" type="button">Välj / byt målvakt</button></div><p id="keeperCurrent" class="help"></p><div style="overflow-x:auto"><table><thead><tr><th>Målvakt</th><th>Speltid</th><th>Räddn.</th><th>Insl.</th><th>Räddn.%</th></tr></thead><tbody id="keeperStats"></tbody></table></div>';
- el('clockPanel').after(goaliePanel);
+ el('linesPanel').after(goaliePanel);
  // Reuse original event handlers. Team headings always follow Öjaby/opponent, never home/away.
  const grid=el('quickGoal').parentElement;
  grid.classList.remove('quickGrid');grid.classList.add('teamQuickGrid');

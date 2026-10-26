@@ -847,9 +847,9 @@ section.panel.mc-foldable.mc-folded{padding-bottom:12px!important}
    panel.classList.add('mc-foldable');
    function apply(isOpen){
     panel.classList.toggle('mc-folded',!isOpen);
-    button.textContent=isOpen?'Fäll ihop ▲':'Visa ▼';
+    button.textContent=isOpen?'Dölj ▴':'Visa ▾';
     button.setAttribute('aria-expanded',String(isOpen));
-    button.setAttribute('aria-label',(isOpen?'Fäll ihop ':'Visa ')+heading.textContent.replace(/Visa ▼|Fäll ihop ▲/g,'').trim());
+    button.setAttribute('aria-label',(isOpen?'Fäll ihop ':'Visa ')+heading.textContent.replace(/Visa ▾|Dölj ▴/g,'').trim());
    }
    apply(open);
    button.addEventListener('click',function(){
@@ -865,4 +865,159 @@ section.panel.mc-foldable.mc-folded{padding-bottom:12px!important}
  else setup();
 })();
 </script>
+
+<style id="internalPlayerStatsStyle">
+#internalPlayerStats[hidden]{display:none!important}
+#internalPlayerStats .ips-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#internalPlayerStats .ips-grid button{font-size:12px;padding:9px 4px;min-height:42px}
+#internalPlayerStats .ips-scroll{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+#internalPlayerStats table{min-width:660px;width:100%;border-collapse:collapse;font-size:12px}
+#internalPlayerStats th,#internalPlayerStats td{padding:7px 8px;border-bottom:1px solid #40536a;text-align:right;white-space:nowrap}
+#internalPlayerStats th:first-child,#internalPlayerStats td:first-child{text-align:left;position:sticky;left:0;background:#1c2c40}
+#internalPlayerStats .ips-lag{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+<script id="internalPlayerStatsScript">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const panel=document.createElement('section');panel.id='internalPlayerStats';panel.className='panel';panel.hidden=true;
+panel.innerHTML='<h2>🧪 Spelarstatistik – internmatch</h2><p class="help">Separat teststatistik för båda lagen. Sparas endast i den pågående matchen, aldrig i säsongsarkivet.</p><div class="ips-lag"><button type="button" id="ipsBlue">🔵 Öjaby blå</button><button type="button" id="ipsRed">🔴 Öjaby röd</button></div><p id="ipsActive" class="help"></p><div class="ips-grid" id="ipsActions"></div><p class="help" id="ipsHelp"></p><div class="ips-scroll"><table><thead><tr><th>Spelare</th><th>M</th><th>A</th><th>P</th><th>Sk mål</th><th>Sk ut</th><th>Sk täck</th><th>Täckta</th><th>Utv min</th><th>Speltid</th></tr></thead><tbody id="ipsRows"></tbody></table></div><p id="ipsTotals" class="help"></p><button type="button" class="secondary" id="ipsUndo">↶ Ångra senaste testhändelsen</button>';
+const anchor=$('internalTeams')||$('quickPanel');
+(anchor.closest('section.panel')||anchor).after(panel);
+let selected='red', lastKey='';
+const types=[['goal','🥅 Mål'],['shotOn','🎯 Skott på mål'],['shotOff','↗ Skott utanför'],['shotBlocked','🧱 Skott i täck'],['block','🛡 Täckt skott'],['penalty','⏱ Utvisning']];
+function internal(){return state.matchKind==='internal'}
+function ensure(){
+ if(!Array.isArray(state.internalStatEvents))state.internalStatEvents=[];
+ if(!Array.isArray(state.internalRedShifts))state.internalRedShifts=[];
+}
+function active(side){return side==='red'?state.internalRedActive:state.active}
+function stamp(){if(state.running)tick();return Math.max(0,Math.min(900,Number(state.seconds)||0))}
+function redShiftClose(){
+ ensure();const a=state.internalRedActive;
+ if(!a)return;
+ const end=stamp();
+ const duration=a.period===state.period?Math.max(0,end-(Number(a.start)||0)):Math.max(0,900-(Number(a.start)||0));
+ if(duration>0)state.internalRedShifts.push({players:[...(a.players||[])],period:a.period,duration,start:a.start,end:a.start+duration});
+}
+function events(side){
+ ensure();
+ const test=state.internalStatEvents.filter(e=>e.team===side);
+ if(side==='red')return test;
+ const native=(state.events||[]).filter(e=>e.team!=='red').map(e=>{
+ const map={'Mål framåt':'goal','Skott på mål':'shotOn','Skott utanför':'shotOff','Skott i täck':'shotBlocked','Täckt skott':'block'};
+ return {type:map[e.type]||'',player:e.scorer||'',assist:e.assist||'',minutes:0,team:'blue',native:true};
+ });
+ return [...test,...native];
+}
+function choosePlayer(players,message,allowNone){
+ const options=players.map((n,i)=>`${i+1}. ${n}`).join('\n');
+ const answer=prompt(message+'\n'+options+(allowNone?'\n0. Utan spelare':''),'1');
+ if(answer===null)return null;
+ const num=Number(answer);
+ if(!Number.isInteger(num)||num<0||num>players.length||(!allowNone&&num===0)){alert('Välj ett giltigt spelarnummer.');return null}
+ return num===0?'':players[num-1];
+}
+function record(type){
+ if(!internal())return;
+ ensure();
+ const a=active(selected),players=[...(a?.players||[])];
+ if(!players.length){alert('Välj en femma för '+(selected==='red'?'Öjaby röd':'Öjaby blå')+' först.');return}
+ const player=choosePlayer(players,'Välj spelare:',false);
+ if(player===null)return;
+ let assist='',minutes=0;
+ if(type==='goal'){
+  assist=choosePlayer(players.filter(n=>n!==player),'Välj eventuell assist:',true);
+  if(assist===null)return;
+ }
+ if(type==='penalty'){
+  const val=prompt('Utvisning i minuter (2, 5 eller 10):','2');
+  if(val===null)return;
+  minutes=Number(val);
+  if(![2,5,10].includes(minutes)){alert('Välj 2, 5 eller 10 minuter.');return}
+ }
+ state.internalStatEvents.push({team:selected,type,player,assist,minutes,period:state.period,time:stamp()});
+ save();draw();
+}
+function rows(side){
+ const eventList=events(side);
+ const segments=side==='red'?[...(state.internalRedShifts||[])]:[...(state.shifts||[])];
+ const a=active(side);
+ if(a){const t=stamp();segments.push({players:a.players||[],duration:a.period===state.period?Math.max(0,t-(a.start||0)):0})}
+ const players=new Set([...roster.filter(p=>p.active).map(p=>p.name),...eventList.map(e=>e.player),...segments.flatMap(s=>s.players||[])]);
+ const output=[];
+ for(const name of players){
+  if(!name)continue;
+  const ev=eventList.filter(e=>e.player===name);
+  const count=type=>ev.filter(e=>e.type===type).length;
+  const assists=eventList.filter(e=>e.assist===name).length;
+  const time=segments.filter(s=>(s.players||[]).includes(name)).reduce((sum,s)=>sum+Math.max(0,Number(s.duration)||0),0);
+  const goals=count('goal');
+  output.push({name,goals,assists,time,html:`<tr><td></td><td>${goals}</td><td>${assists}</td><td>${goals+assists}</td><td>${count('shotOn')}</td><td>${count('shotOff')}</td><td>${count('shotBlocked')}</td><td>${count('block')}</td><td>${ev.reduce((sum,e)=>sum+(Number(e.minutes)||0),0)}</td><td>${fmt(time)}</td></tr>`});
+ }
+ output.sort((a,b)=>(b.goals+b.assists)-(a.goals+a.assists)||b.time-a.time||a.name.localeCompare(b.name,'sv'));
+ const body=$('ipsRows');body.replaceChildren();
+ for(const r of output){
+  const temp=document.createElement('tbody');temp.innerHTML=r.html;
+  const tr=temp.firstElementChild;tr.firstElementChild.textContent=r.name;body.append(tr);
+ }
+ $('ipsTotals').textContent=`${side==='red'?'Rött':'Blått'} lag · ${eventList.filter(e=>e.type==='goal').length} mål · ${eventList.filter(e=>e.type==='shotOn').length} skott på mål · ${eventList.filter(e=>e.type==='penalty').length} utvisningar`;
+}
+function draw(){
+ panel.hidden=!internal();if(!internal())return;
+ ensure();
+ $('ipsBlue').className=selected==='blue'?'active':'secondary';
+ $('ipsRed').className=selected==='red'?'active':'secondary';
+ const a=active(selected);
+ $('ipsActive').textContent='Inne på planen: '+((a?.players||[]).join(', ')||'Ingen femma vald');
+ $('ipsHelp').textContent=selected==='blue'?'Blå lagets ordinarie registreringar visas också i tabellen. Undvik att registrera samma händelse två gånger.':'Röda lagets registreringar ligger separat från seriematchens händelser.';
+ rows(selected);
+}
+$('ipsBlue').onclick=()=>{selected='blue';draw()};
+$('ipsRed').onclick=()=>{selected='red';draw()};
+for(const [type,label] of types){
+ const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>record(type);$('ipsActions').append(b);
+}
+$('ipsUndo').onclick=()=>{
+ ensure();
+ const index=state.internalStatEvents.findLastIndex(e=>e.team===selected);
+ if(index<0){alert('Inga separata testhändelser att ångra för detta lag.');return}
+ state.internalStatEvents.splice(index,1);save();draw();
+};
+// Följ röda lagets femmabyten utan att ändra den ordinarie statistikmotorn.
+const redButtons=$('internalRedButtons');
+if(redButtons){
+ redButtons.addEventListener('click',e=>{
+  if(!e.target.closest('button')||!internal())return;
+  // Capture the old line before the existing click handler changes it.
+ },true);
+ // Capture old shift when user selects another lineup, then let the existing handler work.
+ redButtons.addEventListener('click',e=>{
+  if(!e.target.closest('button')||!internal())return;
+  const before=state.internalRedActive;
+  if(before){redShiftClose();save()}
+ },true);
+}
+const finish=$('finishMatch');
+finish.addEventListener('click',()=>{
+ // After the original confirmation handler runs, a completed internmatch has a new state object.
+ setTimeout(()=>{draw()},0);
+});
+const originalRender=render;
+render=function(){originalRender();draw()};
+$('matchKind').addEventListener('change',()=>setTimeout(draw,0));
+setInterval(()=>{if(internal()&&state.running)rows(selected)},1000);
+draw();
+})();
+</script>
+<style id="compactFoldButtons">
+section.panel.mc-foldable > h2 > .mc-fold-button{
+ min-height:26px!important;min-width:51px!important;
+ padding:3px 6px!important;font-size:10px!important;
+ line-height:1!important;border-radius:6px!important;
+ border-width:1px!important;letter-spacing:0!important;
+ box-shadow:none!important;width:auto!important;
+}
+section.panel.mc-foldable > h2{gap:5px!important}
+</style>
 </body></html>

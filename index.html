@@ -746,4 +746,55 @@ const finish=get('finishMatch');const oldFinish=finish.onclick;finish.onclick=fu
 redEditor();drawTeams();
 })();
 </script>
+
+<style id="internalTestControlsStyle">
+#internalTestControls[hidden]{display:none!important}
+.internalTestActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.internalTestActions button{min-height:43px;font-size:13px}
+.internalTestStats{font-size:13px;line-height:1.7}
+</style>
+<script id="internalTestControlsScript">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const panel=document.createElement('section');
+panel.className='panel';panel.id='internalTestControls';panel.hidden=true;
+panel.innerHTML=`<h2>🧪 Internmatch – båda lagens händelser</h2>
+<p class="help">Separat testregistrering för blå och röd. Inga händelser härifrån förs över till seriematcher eller säsongsarkiv.</p>
+<div class="internalTeamGrid">
+<div class="internalTeam blue"><h3>🔵 Öjaby blå</h3><div class="internalTestActions" id="testBlueActions"></div><div id="testBlueStats" class="internalTestStats"></div></div>
+<div class="internalTeam red"><h3>🔴 Öjaby röd</h3><div class="internalTestActions" id="testRedActions"></div><div id="testRedStats" class="internalTestStats"></div></div>
+</div><h3>🔄 Snabbbyte – internmatch</h3><div class="row"><label>Lag <select id="testSwapTeam"><option value="blue">Öjaby blå</option><option value="red">Öjaby röd</option></select></label><label>Spelare UT <select id="testSwapOut"></select></label><label>Spelare IN <select id="testSwapIn"></select></label><button type="button" id="testSwapGo">Genomför byte</button></div>
+<div class="row"><button type="button" class="secondary" id="testUndo">↶ Ångra testhändelse</button><span id="testFeedback" class="help"></span></div><div id="testLog" class="help"></div>`;
+$('quickPanel').after(panel);
+const actions=[['goal','🥅 Mål'],['shotOn','🎯 Skott på mål'],['shotOff','↗️ Skott utanför'],['shotBlocked','🧱 Skott i täck'],['block','🛡️ Täckt skott'],['penalty','⏱️ Utvisning']];
+const empty=()=>({blue:[],red:[],swaps:[],shifts:[],events:[]});
+function data(){if(!state.internalTest||typeof state.internalTest!=='object')state.internalTest=empty();return state.internalTest}
+function lineup(team){return team==='blue'?state.active:state.internalRedActive}
+function eligible(){return roster.filter(p=>p.active&&!p.goalie).map(p=>p.name)}
+function clock(){if(state.running)tick();return elapsed()}
+function record(team,type){const active=lineup(team);if(!active?.players?.length){alert('Välj först en femma i '+(team==='blue'?'blå':'röda')+' laget.');return}
+const names=active.players;let player=prompt('Välj spelare (skriv nummer):\n'+names.map((n,i)=>(i+1)+'. '+n).join('\n')+'\n\n0 = registrera på femman','1');
+if(player===null)return;const idx=Number(player);if(!Number.isInteger(idx)||idx<0||idx>names.length){alert('Ogiltigt spelarnummer.');return}
+let assist='';if(type==='goal'&&idx>0){const a=prompt('Assist? Skriv spelarnummer, 0 för ingen:\n'+names.map((n,i)=>(i+1)+'. '+n).join('\n'),'0');if(a===null)return;const ai=Number(a);if(!Number.isInteger(ai)||ai<0||ai>names.length){alert('Ogiltigt spelarnummer.');return}assist=ai>0?names[ai-1]:''}
+let minutes=0;if(type==='penalty'){const m=prompt('Utvisning minuter (2, 5 eller 10):','2');if(m===null)return;minutes=Number(m);if(![2,5,10].includes(minutes)){alert('Välj 2, 5 eller 10 minuter.');return}}
+const d=data();d.events.push({team,type,player:idx?names[idx-1]:'Femma',assist,minutes,players:[...names],period:state.period,time:clock()});save();draw()}
+function options(select,arr,placeholder){select.replaceChildren();for(const n of ['',...arr]){const o=document.createElement('option');o.value=n;o.textContent=n||placeholder;select.append(o)}}
+function swap(){const team=$('testSwapTeam').value,active=lineup(team),out=$('testSwapOut').value,into=$('testSwapIn').value;if(!active||!out||!into||out===into||!active.players.includes(out)||active.players.includes(into)){alert('Välj en spelare på planen och en annan på bänken.');return}
+const t=clock(),d=data();d.swaps.push({team,out,into,period:state.period,time:t});active.players=active.players.map(n=>n===out?into:n);save();draw();if(typeof render==='function')render()}
+function draw(){const on=state.matchKind==='internal';panel.hidden=!on;if(!on)return;const d=data();
+for(const team of ['blue','red']){const root=$(team==='blue'?'testBlueActions':'testRedActions');if(!root.childElementCount){for(const [type,label] of actions){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>record(team,type);root.append(b)}}
+const events=d.events.filter(e=>e.team===team);const count=type=>events.filter(e=>e.type===type).length;
+$(team==='blue'?'testBlueStats':'testRedStats').textContent=`Mål ${count('goal')} · Skott på mål ${count('shotOn')} · Utanför ${count('shotOff')} · I täck ${count('shotBlocked')} · Täckta ${count('block')} · Utvisningar ${count('penalty')}`;
+}
+const team=$('testSwapTeam').value,active=lineup(team);const inside=active?.players||[];options($('testSwapOut'),inside,'– välj UT –');options($('testSwapIn'),eligible().filter(n=>!inside.includes(n)&&!((team==='blue'?state.internalRedActive:state.active)?.players||[]).includes(n)),'– välj IN –');
+$('testLog').textContent=d.events.slice(-8).reverse().map(e=>`${e.team==='blue'?'🔵':'🔴'} P${e.period} ${fmt(e.time)} ${actions.find(a=>a[0]===e.type)?.[1]||e.type}: ${e.player}${e.assist?' (assist '+e.assist+')':''}`).join(' | ');
+}
+$('testSwapTeam').onchange=draw;$('testSwapGo').onclick=swap;
+$('testUndo').onclick=()=>{const d=data();if(!d.events.length){alert('Inga testhändelser att ångra.');return}d.events.pop();save();draw()};
+const priorRender=render;render=function(){priorRender();draw()};
+const priorFinish=$('finishMatch').onclick;$('finishMatch').onclick=function(e){priorFinish?.call(this,e);draw()};
+draw();
+})();
+</script>
 </body></html>

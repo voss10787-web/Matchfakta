@@ -227,9 +227,9 @@ const hub=$q('quickPanel'), clock=$q('clockPanel'), schedule=$q('matchSchedule')
 // Match controls grouped near the clock without removing any existing feature.
 clock.insertBefore($q('liveScoreboard'), clock.firstChild);
 clock.after(hub);
-hub.after($q('linesPanel'));
-$q('linesPanel').after($q('swapPanel'));
-$q('swapPanel').after($q('eventsPanel'));
+hub.after($q('swapPanel'));
+$q('swapPanel').after($q('linesPanel'));
+$q('linesPanel').after($q('eventsPanel'));
 $q('eventsPanel').after(schedule);
 let pending=null;
 function stopForStoppage(){

@@ -881,7 +881,7 @@ section.panel.mc-foldable.mc-folded{padding-bottom:12px!important}
 'use strict';
 const $=id=>document.getElementById(id);
 const panel=document.createElement('section');panel.id='internalPlayerStats';panel.className='panel';panel.hidden=true;
-panel.innerHTML='<h2>🧪 Spelarstatistik – internmatch</h2><p class="help">Separat teststatistik för båda lagen. Sparas endast i den pågående matchen, aldrig i säsongsarkivet.</p><div class="ips-lag"><button type="button" id="ipsBlue">🔵 Öjaby blå</button><button type="button" id="ipsRed">🔴 Öjaby röd</button></div><p id="ipsActive" class="help"></p><div class="row" style="margin:10px 0"><label>Målvakt för valt lag <select id="ipsGoalie"></select></label><span id="ipsGoalieStatus" class="help"></span></div><div class="ips-grid"> id="ipsActions"></div><p class="help" id="ipsHelp"></p><div class="ips-scroll"><table><thead><tr><th>Spelare</th><th>M</th><th>A</th><th>P</th><th>Sk mål</th><th>Sk ut</th><th>Sk täck</th><th>Täckta</th><th>Utv min</th><th>Speltid</th></tr></thead><tbody id="ipsRows"></tbody></table></div><p id="ipsTotals" class="help"></p><button type="button" class="secondary" id="ipsUndo">↶ Ångra senaste testhändelsen</button>';
+panel.innerHTML='<h2>🧪 Spelarstatistik – internmatch</h2><p class="help">Separat teststatistik för båda lagen. Sparas endast i den pågående matchen, aldrig i säsongsarkivet.</p><div class="ips-lag"><button type="button" id="ipsBlue">🔵 Öjaby blå</button><button type="button" id="ipsRed">🔴 Öjaby röd</button></div><p id="ipsActive" class="help"></p><div class="row" style="margin:10px 0"><label>🥅 Målvakt för valt lag <select id="ipsGoalie" aria-label="Välj målvakt för blått eller rött lag"></select></label><span id="ipsGoalieStatus" class="help"></span></div><div class="ips-grid" id="ipsActions"></div><p class="help" id="ipsHelp"></p><div class="ips-scroll"><table><thead><tr><th>Spelare</th><th>M</th><th>A</th><th>P</th><th>Sk mål</th><th>Sk ut</th><th>Sk täck</th><th>Täckta</th><th>Utv min</th><th>Speltid</th></tr></thead><tbody id="ipsRows"></tbody></table></div><p id="ipsTotals" class="help"></p><button type="button" class="secondary" id="ipsUndo">↶ Ångra senaste testhändelsen</button>';
 const anchor=$('internalTeams')||$('quickPanel');
 (anchor.closest('section.panel')||anchor).after(panel);
 let selected='red', lastKey='';
@@ -964,7 +964,7 @@ function draw(){
  panel.hidden=!internal();if(!internal())return;
  ensure();
  const goalieSelect=$('ipsGoalie');
- const goalieNames=roster.filter(p=>p.active&&p.goalie).map(p=>p.name);
+ const goalieNames=roster.filter(p=>p.goalie).map(p=>p.name);
  const current=selected==='red'?(state.internalRedGoalie||''):(state.goalkeeper||'');
  if(goalieSelect.dataset.team!==selected || goalieSelect.dataset.names!==goalieNames.join('|')){
   goalieSelect.replaceChildren();
@@ -1086,4 +1086,8 @@ setInterval(sync,200);
 window.mcGetRedPlayerSeconds=name=>(state.internalRedPlayerSeconds||[]).find(x=>x.name===name)?.seconds||0;
 })();
 </script>
-</body></html>
+<style id="ips-goalie-visibility">
+#internalPlayerStats #ipsGoalie{display:block;width:100%;min-height:46px;margin-top:7px;font-size:16px}
+#internalPlayerStats label:has(#ipsGoalie){display:block;width:100%;font-weight:700}
+#internalPlayerStats #ipsGoalieStatus{display:block;margin-top:5px}
+</style></body></html>

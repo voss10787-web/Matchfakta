@@ -104,8 +104,27 @@
 <div id="trainingSessions" class="help" style="margin-top:10px"></div>
 </section>
 </main><script>
-const initialRoster=[{"name": "Algot Karlsson", "goalie": false, "active": true}, {"name": "Edvin Sten", "goalie": false, "active": true}, {"name": "Edvin Logarn", "goalie": false, "active": true}, {"name": "Jack Holmquist", "goalie": true, "active": true}, {"name": "Malte Lidström", "goalie": false, "active": true}, {"name": "Noah Blixt", "goalie": false, "active": true}, {"name": "Sixten Jepson", "goalie": false, "active": true}, {"name": "William Voss", "goalie": false, "active": true}, {"name": "Arvid Petersson", "goalie": false, "active": true}, {"name": "Malte Flykt", "goalie": false, "active": true}, {"name": "Oscar Stenberg", "goalie": false, "active": true}, {"name": "Alfons Liljegren", "goalie": false, "active": true}, {"name": "Arvid Melin", "goalie": false, "active": true}, {"name": "Emil Ekroth", "goalie": false, "active": true}, {"name": "Emilio Lagerkvist", "goalie": false, "active": true}, {"name": "Jonathan Svensson", "goalie": false, "active": true}, {"name": "Leonardo Larsson", "goalie": false, "active": true}, {"name": "Rasmus Edvardsson", "goalie": false, "active": true}, {"name": "Vidar Petersson", "goalie": false, "active": true}, {"name": "William Jonsson", "goalie": true, "active": true}, {"name": "Wisnu Sjögren", "goalie": false, "active": true}];const rosterKey='ojaby_matchcoach_roster_v1';let roster;try{roster=JSON.parse(localStorage.getItem(rosterKey)||'null')||structuredClone(initialRoster)}catch{roster=structuredClone(initialRoster)}for(const p of roster){if(p.name==='Jack Holmquist'||p.name==='William Jonsson')p.goalie=true;}localStorage.setItem(rosterKey,JSON.stringify(roster));let names=roster.filter(p=>p.active&&!p.goalie).map(p=>p.name);const KEY='ojaby_matchcoach_trupp_v1';const defaults={lines:[['','','','',''],['','','','',''],['','','','',''],['','','','',''],['','','','',''],['','','','','']],events:[],shifts:[],active:null,seconds:0,running:false,period:'1',opponent:'',date:new Date().toISOString().slice(0,10),mode:'5v5',penalties:[]};let state;try{state={...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{state=structuredClone(defaults)}state.running=false;while(state.lines.length<8)state.lines.push(['','','','','']);let timer=null,lastTick=0;const $=id=>document.getElementById(id),fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`,save=()=>localStorage.setItem(KEY,JSON.stringify(state));function elapsed(){return Math.min(900,state.seconds)}function remaining(){return Math.max(0,900-elapsed())}function tick(){if(!state.running)return;const now=performance.now();state.seconds=Math.min(900,state.seconds+(now-lastTick)/1000);lastTick=now;if(state.seconds>=900){state.running=false;closeActive();$('startClock').textContent='Starta klockan'}renderStats();renderPenalties();$('clock').textContent=fmt(elapsed());save()}
-function renderLines(){const root=$('lines');root.innerHTML='';state.lines.forEach((line,i)=>{let card=document.createElement('div');card.className='panel';card.style.margin='0';let h=document.createElement('h3');h.textContent=i<3?'Femma '+(i+1):i===3?'Extra / special':i===4?'Powerplay 1 (PP1)':i===5?'Boxplay 1 (BP1)':i===6?'Powerplay 2 (PP2)':'Boxplay 2 (BP2)';card.append(h);let grid=document.createElement('div');grid.className='five';line.forEach((player,j)=>{let sel=document.createElement('select');sel.innerHTML='<option value="">– tom –</option>'+names.map(n=>`<option value="${n}">${n}</option>`).join('');if(player&&!names.includes(player)){const absentOption=document.createElement('option');absentOption.value=player;absentOption.textContent=player+' (ej uttagen)';sel.append(absentOption)}sel.value=player;sel.onchange=()=>{state.lines[i][j]=sel.value;save()};grid.append(sel)});card.append(grid);let btn=document.createElement('button');btn.style.marginTop='10px';btn.textContent=i===3?'Extra IN':i===4?'PP1 IN':i===5?'BP1 IN':i===6?'PP2 IN':i===7?'BP2 IN':'Femma '+(i+1)+' IN';btn.className=state.active?.line===i?'active':'';btn.onclick=()=>switchLine(i);card.append(btn);root.append(card)})}
+const initialRoster=[{"name": "Algot Karlsson", "goalie": false, "active": true}, {"name": "Edvin Sten", "goalie": false, "active": true}, {"name": "Edvin Logarn", "goalie": false, "active": true}, {"name": "Jack Holmquist", "goalie": true, "active": true}, {"name": "Malte Lidström", "goalie": false, "active": true}, {"name": "Noah Blixt", "goalie": false, "active": true}, {"name": "Sixten Jepson", "goalie": false, "active": true}, {"name": "William Voss", "goalie": false, "active": true}, {"name": "Arvid Petersson", "goalie": false, "active": true}, {"name": "Malte Flykt", "goalie": false, "active": true}, {"name": "Oscar Stenberg", "goalie": false, "active": true}, {"name": "Alfons Liljegren", "goalie": false, "active": true}, {"name": "Arvid Melin", "goalie": false, "active": true}, {"name": "Emil Ekroth", "goalie": false, "active": true}, {"name": "Emilio Lagerkvist", "goalie": false, "active": true}, {"name": "Jonathan Svensson", "goalie": false, "active": true}, {"name": "Leonardo Larsson", "goalie": false, "active": true}, {"name": "Rasmus Edvardsson", "goalie": false, "active": true}, {"name": "Vidar Petersson", "goalie": false, "active": true}, {"name": "William Jonsson", "goalie": true, "active": true}, {"name": "Wisnu Sjögren", "goalie": false, "active": true}];const rosterKey='ojaby_matchcoach_roster_v1';let roster;try{roster=JSON.parse(localStorage.getItem(rosterKey)||'null')||structuredClone(initialRoster)}catch{roster=structuredClone(initialRoster)}for(const p of roster){if(p.name==='Jack Holmquist'||p.name==='William Jonsson'||p.name==='Malte Flykt')p.goalie=true;}if(!roster.some(p=>p.name.toLocaleLowerCase('sv')==='malte flykt'))roster.push({name:'Malte Flykt',goalie:true,active:true});localStorage.setItem(rosterKey,JSON.stringify(roster));let names=roster.filter(p=>p.active&&!p.goalie).map(p=>p.name);const KEY='ojaby_matchcoach_trupp_v1';const defaults={lines:[['','','','',''],['','','','',''],['','','','',''],['','','','',''],['','','','',''],['','','','','']],events:[],shifts:[],active:null,seconds:0,running:false,period:'1',opponent:'',date:new Date().toISOString().slice(0,10),mode:'5v5',penalties:[]};let state;try{state={...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{state=structuredClone(defaults)}state.running=false;while(state.lines.length<8)state.lines.push(['','','','','']);let timer=null,lastTick=0;const $=id=>document.getElementById(id),fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`,save=()=>localStorage.setItem(KEY,JSON.stringify(state));function elapsed(){return Math.min(900,state.seconds)}function remaining(){return Math.max(0,900-elapsed())}function tick(){if(!state.running)return;const now=performance.now();state.seconds=Math.min(900,state.seconds+(now-lastTick)/1000);lastTick=now;if(state.seconds>=900){state.running=false;closeActive();$('startClock').textContent='Starta klockan'}renderStats();renderPenalties();$('clock').textContent=fmt(elapsed());save()}
+function renderLines(){
+ const root=$('lines');root.innerHTML='';
+ const positions=['Back – vänster','Back – höger','Center','Vänster forward','Höger forward'];
+ state.lines.forEach((line,i)=>{
+  const card=document.createElement('div');card.className='panel';card.style.margin='0';
+  const h=document.createElement('h3');h.textContent=i<3?'Femma '+(i+1):['Extra / special','Powerplay 1 (PP1)','Boxplay 1 (BP1)','Powerplay 2 (PP2)','Boxplay 2 (BP2)'][i-3];card.append(h);
+  const grid=document.createElement('div');grid.className='five positionFive';
+  for(let j=0;j<5;j++){
+   const wrap=document.createElement('label');wrap.className='positionSlot';
+   const caption=document.createElement('span');caption.textContent=positions[j];wrap.append(caption);
+   const sel=document.createElement('select');
+   const blank=document.createElement('option');blank.value='';blank.textContent='– välj spelare –';sel.append(blank);
+   for(const n of names){const opt=document.createElement('option');opt.value=n;opt.textContent=n;sel.append(opt)}
+   if(line[j]&&!names.includes(line[j])){const opt=document.createElement('option');opt.value=line[j];opt.textContent=line[j]+' (ej uttagen)';sel.append(opt)}
+   sel.value=line[j]||'';
+   sel.onchange=()=>{state.lines[i][j]=sel.value;save()};wrap.append(sel);grid.append(wrap);
+  }
+  card.append(grid);const btn=document.createElement('button');btn.style.marginTop='10px';btn.textContent=i===3?'Extra IN':i===4?'PP1 IN':i===5?'BP1 IN':i===6?'PP2 IN':i===7?'BP2 IN':'Femma '+(i+1)+' IN';btn.className=state.active?.line===i?'active':'';btn.onclick=()=>switchLine(i);card.append(btn);root.append(card);
+ });
+}
 function closeActive(){if(state.active){state.shifts.push({...state.active,end:elapsed(),duration:Math.max(0,elapsed()-state.active.start)});state.active=null}}
 function switchLine(i){if(i>=0&&i<=3)state.lastNormalLine=i;const players=[...new Set(state.lines[i].filter(Boolean))];const absent=players.filter(n=>!roster.some(p=>p.name===n&&p.active&&!p.goalie));if(absent.length)return alert('Följande spelare är inte uttagna: '+absent.join(', ')+'. Ändra femman under Kedjor eller matchtruppen.');if(!players.length)return alert('Välj spelare först.');if(state.active?.line===i&&players.length===state.active.players.length&&players.every(n=>state.active.players.includes(n)))return;closeActive();state.active={line:i,players,start:elapsed(),period:state.period};if([4,5,6,7].includes(i))state.mode=(i===4||i===6)?'PP':'BP';else state.mode=penaltyMode();save();render()}
 function renderSwap(){
@@ -144,7 +163,7 @@ function penaltyEnd(p){return p.endedAt??(matchTime(p.period,p.time)+p.minutes*6
 function activePenalties(at=matchTime()){return (state.penalties||[]).filter(p=>matchTime(p.period,p.time)<=at&&penaltyEnd(p)>at)}
 function penaltyMode(at=matchTime()){const active=activePenalties(at);const own=active.filter(p=>p.team==='own'&&p.minutes!==10).length,opp=active.filter(p=>p.team==='opp'&&p.minutes!==10).length;return own>opp?'BP':opp>own?'PP':'5v5'}
 function endMinorOnGoal(type,at,ask=false){const active=activePenalties(at);const own=active.filter(p=>p.team==='own'&&p.minutes!==10).length,opp=active.filter(p=>p.team==='opp'&&p.minutes!==10).length;const penalized=type==='Mål framåt'&&opp>own?'opp':type==='Mål bakåt'&&own>opp?'own':null;if(!penalized)return null;const candidates=active.filter(p=>p.team===penalized&&p.minutes===2).sort((a,b)=>matchTime(a.period,a.time)-matchTime(b.period,b.time));if(!candidates.length)return null;const p=candidates[0];if(ask){const side=penalized==='own'?'Öjabys':'motståndarnas';const remain=Math.max(0,Math.ceil(penaltyEnd(p)-at));if(!confirm('Mål registrerat. Kvitta '+side+' 2-minutersutvisning ('+fmt(remain)+' kvar)?\n\nOK = Ja, kvitta\nAvbryt = Nej, behåll'))return null;}p.endedAt=at;p.endedByGoal=true;return p}
-function record(){const type=$('eventType').value;if(type==='Mål framåt'||type==='Mål bakåt'){if(state.running){tick();state.running=false;clearInterval(timer);timer=null;}}const at=matchTime();const mode=([4,6].includes(state.active?.line)?'PP':[5,7].includes(state.active?.line)?'BP':penaltyMode(at));const ev={period:state.period,time:elapsed(),type,players:state.active?.players||[],mode,scorer:$('scorer').value,assist:$('assist').value};if(type==='Mål framåt'||type==='Mål bakåt'){const ended=endMinorOnGoal(type,at,true);if(ended)ev.penaltyEnded=true;}else if(type==='Powerplay start')state.mode='PP';else if(type==='Powerplay slut')state.mode='5v5';else if(type==='Boxplay start')state.mode='BP';else if(type==='Boxplay slut')state.mode='5v5';state.events.push(ev);save();render()}
+function record(){const type=$('eventType').value;if(type==='Mål framåt'||type==='Mål bakåt'){if(state.running){tick();state.running=false;clearInterval(timer);timer=null;}}const at=matchTime();const mode=([4,6].includes(state.active?.line)?'PP':[5,7].includes(state.active?.line)?'BP':penaltyMode(at));const ev={period:state.period,time:elapsed(),type,players:state.active?.players||[],mode,scorer:$('scorer').value,assist:$('assist').value,goalie:state.goalkeeper||''};if(type==='Mål framåt'||type==='Mål bakåt'){const ended=endMinorOnGoal(type,at,true);if(ended)ev.penaltyEnded=true;}else if(type==='Powerplay start')state.mode='PP';else if(type==='Powerplay slut')state.mode='5v5';else if(type==='Boxplay start')state.mode='BP';else if(type==='Boxplay slut')state.mode='5v5';state.events.push(ev);save();render()}
 function statFor(name){let time=0,shifts=0,plus=0,goals=0,assists=0;for(const sh of [...state.shifts,...(state.active?[{...state.active,duration:Math.max(0,elapsed()-state.active.start)}]:[])])if(sh.players.includes(name)){time+=sh.duration;shifts++}for(const e of state.events){if(e.type==='Mål framåt'&&e.scorer===name)goals++;if(e.type==='Mål framåt'&&e.assist===name)assists++;if(e.mode==='5v5'&&e.players.includes(name)){if(e.type==='Mål framåt')plus++;if(e.type==='Mål bakåt')plus--}}return {time,shifts,plus,goals,assists,shotsOn:state.events.filter(e=>e.type==='Skott på mål'&&e.scorer===name).length,shotsOff:state.events.filter(e=>e.type==='Skott utanför'&&e.scorer===name).length,blocks:state.events.filter(e=>e.type==='Täckt skott'&&e.scorer===name).length,penMinutes:(state.penalties||[]).filter(p=>p.team==='own'&&p.player===name).reduce((a,p)=>a+p.minutes,0)}}
 
 function renderLiveView(){
@@ -306,7 +325,7 @@ function hidePicker(){pending=null;$q('quickPicker').hidden=true;}
 function add(type,player='',assist=''){
  if(type==='Mål framåt'||type==='Mål bakåt')stopForStoppage();
  const at=matchTime(),mode=penaltyMode(at);
- const ev={period:state.period,time:elapsed(),type,players:onFloor(),line:state.active?.line??null,mode,scorer:player,assist:assist,quick:true};
+ const ev={period:state.period,time:elapsed(),type,players:onFloor(),line:state.active?.line??null,mode,scorer:player,assist:assist,goalie:state.goalkeeper||'',quick:true};
  if(type==='Mål framåt'||type==='Mål bakåt'){
    // Preserve previous penalty state to make undo safe.
    const before=(state.penalties||[]).map(p=>({endedAt:p.endedAt,endedByGoal:p.endedByGoal}));
@@ -543,4 +562,98 @@ document.getElementById('squadSave').onclick=()=>{
 };
 draw();
 })();
-</script></body></html>
+</script>
+<style id="goalieAndTeamStyles">
+.positionFive{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.positionSlot{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:12px;color:#cbd9eb}
+.positionSlot select{width:100%;min-width:0;font-size:13px}
+.positionSlot:nth-child(3){grid-column:1/-1}
+.teamQuickGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.teamQuickGroup{min-width:0;border:1px solid #48647e;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px}
+.teamQuickGroup.own{background:#153c65;border-color:#3983c9}
+.teamQuickGroup.opp{background:#552b38;border-color:#bb6477}
+.teamQuickGroup h3{text-align:center;font-size:15px;margin:3px 0 6px}
+.teamQuickGroup button{width:100%;min-height:46px;font-size:12px;padding:8px 4px;white-space:normal}
+#goaliePanel .row{margin-top:10px}
+#goaliePanel select{max-width:100%}
+#goaliePanel table{width:100%;font-size:12px}
+#goaliePanel td,#goaliePanel th{padding:7px 4px;text-align:left}
+</style>
+<script id="goalieAndTeamScript">
+(function(){
+ 'use strict';
+ const el=id=>document.getElementById(id);
+ const goaliePanel=document.createElement('section');goaliePanel.id='goaliePanel';goaliePanel.className='panel';
+ goaliePanel.innerHTML='<h2>🥅 Målvakter – start och byte</h2><p class="help">Välj målvakt före matchen. Vid byte sparas varje målvakts speltid. Registrera räddningar för att få räddningsprocent.</p><div class="row"><label>Målvakt i mål <select id="keeperSelect"></select></label><button id="keeperSet" type="button">Välj / byt målvakt</button></div><p id="keeperCurrent" class="help"></p><div style="overflow-x:auto"><table><thead><tr><th>Målvakt</th><th>Speltid</th><th>Räddn.</th><th>Insl.</th><th>Räddn.%</th></tr></thead><tbody id="keeperStats"></tbody></table></div>';
+ el('clockPanel').after(goaliePanel);
+ // Reuse original event handlers. Team headings always follow Öjaby/opponent, never home/away.
+ const grid=el('quickGoal').parentElement;
+ grid.classList.remove('quickGrid');grid.classList.add('teamQuickGrid');
+ const own=document.createElement('div'),opp=document.createElement('div');
+ own.className='teamQuickGroup own';opp.className='teamQuickGroup opp';
+ own.innerHTML='<h3>🔵 ÖJABY</h3>';opp.innerHTML='<h3>🔴 MOTSTÅNDARE</h3>';
+ grid.append(own,opp);
+ for(const id of ['quickGoal','quickShotOn','quickShotOff','quickShotBlocked','quickBlock'])own.append(el(id));
+ for(const id of ['quickAgainst','quickOppShot','quickPenalty'])opp.append(el(id));
+ el('quickGoal').textContent='🥅 Mål';el('quickAgainst').textContent='🥅 Mål';
+ el('quickShotOn').textContent='🎯 Skott på mål';el('quickShotOff').textContent='↗️ Skott utanför';
+ el('quickShotBlocked').textContent='🧱 Skott i täck';el('quickBlock').textContent='🛡️ Täckt skott';
+ el('quickOppShot').textContent='🧤 Räddning';
+ const addOpponentEvent=(type,saveEvent=false)=>{
+   const e={period:state.period,time:elapsed(),type,players:state.active?.players||[],line:state.active?.line??null,mode:state.mode,scorer:'',assist:'',goalie:state.goalkeeper||'',quick:true};
+   if(saveEvent)e.savedByGoalie=true;
+   state.events.push(e);save();render();
+   el('quickFeedback').textContent=type+' registrerat'+(e.goalie?' · '+e.goalie:'');
+ };
+ // A save is a shot on target; a conceded goal also counts as a shot on target in keeper statistics.
+ el('quickOppShot').onclick=()=>{if(!state.goalkeeper)return alert('Välj målvakt först.');addOpponentEvent('Motståndarskott på mål',true)};
+ const extra=(title,action)=>{const b=document.createElement('button');b.type='button';b.textContent=title;b.onclick=action;return b};
+ opp.append(extra('↗️ Skott utanför',()=>addOpponentEvent('Motståndarskott utanför')));
+ opp.append(extra('🧱 Skott i täck',()=>addOpponentEvent('Motståndarskott i täck')));
+ opp.append(extra('🛡️ Täckt skott',()=>addOpponentEvent('Motståndare täckt skott')));
+ // Existing penalty form supports both teams; these shortcuts preselect the correct team.
+ const ownPenalty=extra('⏱️ Utvisning',()=>{if(state.running){tick();state.running=false;clearInterval(timer);timer=null;save();render()}el('penTeam').value='own';el('penTeam').dispatchEvent(new Event('change'));el('penaltyPanel').scrollIntoView({block:'start',behavior:'smooth'})});own.append(ownPenalty);
+ const opponentPenalty=el('quickPenalty');opponentPenalty.onclick=()=>{if(state.running){tick();state.running=false;clearInterval(timer);timer=null;save();render()}el('penTeam').value='opp';el('penTeam').dispatchEvent(new Event('change'));el('penaltyPanel').scrollIntoView({block:'start',behavior:'smooth'});};
+ const keeperNames=()=>roster.filter(p=>p.active&&p.goalie).map(p=>p.name);
+ function ensure(){if(!state.goalieTimes||typeof state.goalieTimes!=='object')state.goalieTimes={};}
+ function keeperTime(name){ensure();return Number(state.goalieTimes[name]||0)}
+ function renderKeeper(){
+  ensure();const select=el('keeperSelect'),old=select.value;
+  const keepers=keeperNames();select.replaceChildren();
+  const blank=document.createElement('option');blank.value='';blank.textContent='– ingen målvakt –';select.append(blank);
+  for(const name of keepers){const o=document.createElement('option');o.value=name;o.textContent=name;select.append(o)}
+  select.value=keepers.includes(old)?old:(keepers.includes(state.goalkeeper)?state.goalkeeper:'');
+  el('keeperCurrent').textContent='I mål: '+(state.goalkeeper||'Ingen vald')+' · Välj en annan målvakt och tryck Byt för att registrera byte.';
+  const all=[...new Set([...keepers,...Object.keys(state.goalieTimes),...(state.events||[]).map(e=>e.goalie).filter(Boolean)])];
+  el('keeperStats').replaceChildren();
+  for(const name of all){
+   const saves=state.events.filter(e=>e.goalie===name&&e.type==='Motståndarskott på mål'&&e.savedByGoalie).length;
+   const conceded=state.events.filter(e=>e.goalie===name&&e.type==='Mål bakåt').length;
+   const total=saves+conceded,percent=total?(100*saves/total).toFixed(1)+' %':'–';
+   const tr=document.createElement('tr');
+   for(const val of [name,fmt(keeperTime(name)),saves,conceded,percent]){const td=document.createElement('td');td.textContent=String(val);tr.append(td)}
+   el('keeperStats').append(tr);
+  }
+ }
+ el('keeperSet').onclick=()=>{
+  const chosen=el('keeperSelect').value;
+  if(chosen===state.goalkeeper)return;
+  if(state.running)tick();
+  const previous=state.goalkeeper||'';
+  state.goalkeeper=chosen;
+  state.goalieChanges??=[];state.goalieChanges.push({period:state.period,time:elapsed(),out:previous,in:chosen});
+  save();render();
+ };
+ // Accrue only clock-running seconds; preserves minutes on keeper switches and period changes.
+ const previousTick=tick;
+ tick=function(){
+  const before=state.seconds,keeper=state.goalkeeper;
+  previousTick();
+  if(keeper&&state.seconds>before){ensure();state.goalieTimes[keeper]=keeperTime(keeper)+(state.seconds-before);save();renderKeeper()}
+ };
+ const previousRender=render;
+ render=function(){previousRender();renderKeeper()};
+ renderKeeper();
+})();
+</script>
+</body></html>

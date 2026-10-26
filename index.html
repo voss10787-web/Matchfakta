@@ -195,7 +195,7 @@ function renderWarnings(){
  low.forEach(x=>{const el=document.createElement('div');el.className='warningpill';el.textContent='⚠ '+x.name+' · '+fmt(x.time)+' · '+fmt(median-x.time)+' under medianen';root.append(el)});
 }
 function renderStats(){renderLiveView();renderWarnings();let rows=names.map(n=>({name:n,...statFor(n)})).sort((a,b)=>b.time-a.time);$('stats').innerHTML=rows.map(s=>`<tr><td>${s.name}</td><td>${fmt(s.time)}</td><td>${s.shifts}</td><td>${s.goals}</td><td>${s.assists}</td><td>${s.shotsOn}</td><td>${s.shotsOff}</td><td>${s.blocks}</td><td>${s.plus>0?'+':''}${s.plus}</td><td>${s.penMinutes}</td></tr>`).join('');$('shiftCount').textContent=state.shifts.length+(state.active?1:0);$('live').textContent=state.active?`${state.active.line===4?'PP':state.active.line===5?'BP':'Femma '+(state.active.line+1)} inne: ${state.active.players.join(', ')}`:'Ingen femma inne'}
-function render(){renderLines();renderStats();renderSwap();$('clock').textContent=fmt(elapsed());$('startClock').textContent=state.running?'Pausa klockan':'Starta klockan';$('period').value=state.period;$('opponent').value=state.opponent;$('date').value=state.date;let gf=state.events.filter(e=>e.type==='Mål framåt').length,ga=state.events.filter(e=>e.type==='Mål bakåt').length;$('score').textContent=gf+'–'+ga;let pp=state.events.filter(e=>e.type==='Powerplay start').length,bp=state.events.filter(e=>e.type==='Boxplay start').length;$('pp').textContent=state.events.filter(e=>e.type==='Mål framåt'&&e.mode==='PP').length+' / '+pp;$('bp').textContent=state.events.filter(e=>e.type==='Mål bakåt'&&e.mode==='BP').length+' / '+bp;renderPenalties();const all=[...(state.penalties||[]).map(p=>({period:p.period,time:p.time,type:'Utvisning '+p.minutes+' min',detail:(p.team==='own'?'Öjaby: '+p.player:'Motståndare')+(p.reason?' – '+p.reason:'')})),...state.shifts.map(s=>({period:s.period,time:s.start,type:'Byte femma '+(s.line+1),detail:s.players.join(', ')+' ('+fmt(s.duration)+')'})),...state.events.map(e=>({period:e.period,time:e.time,type:e.type,detail:e.type==='Mål framåt'?[e.scorer,e.assist?'assist: '+e.assist:''].filter(Boolean).join(', '):e.type==='Spelarbyte'?e.players[0]+' UT → '+e.players[1]+' IN':e.players.join(', ')}))].sort((a,b)=>Number(a.period)-Number(b.period)||a.time-b.time);$('log').innerHTML=all.map(e=>`<tr><td>${e.period}</td><td>${fmt(e.time)}</td><td>${e.type}</td><td>${e.detail}</td></tr>`).join('')}
+function render(){renderLines();renderStats();renderSwap();$('clock').textContent=fmt(elapsed());$('startClock').textContent=state.running?'Pausa klockan':'Starta klockan';$('period').value=state.period;$('opponent').value=state.opponent;$('date').value=state.date;let gf=state.events.filter(e=>e.type==='Mål framåt').length,ga=state.events.filter(e=>e.type==='Mål bakåt').length;$('score').textContent=state.matchKind==='internal'?((state.internalStatEvents||[]).filter(e=>e.team==='blue'&&e.type==='goal').length+'–'+(state.internalStatEvents||[]).filter(e=>e.team==='red'&&e.type==='goal').length):(gf+'–'+ga);let pp=state.events.filter(e=>e.type==='Powerplay start').length,bp=state.events.filter(e=>e.type==='Boxplay start').length;$('pp').textContent=state.events.filter(e=>e.type==='Mål framåt'&&e.mode==='PP').length+' / '+pp;$('bp').textContent=state.events.filter(e=>e.type==='Mål bakåt'&&e.mode==='BP').length+' / '+bp;renderPenalties();const all=[...(state.penalties||[]).map(p=>({period:p.period,time:p.time,type:'Utvisning '+p.minutes+' min',detail:(p.team==='own'?'Öjaby: '+p.player:'Motståndare')+(p.reason?' – '+p.reason:'')})),...state.shifts.map(s=>({period:s.period,time:s.start,type:'Byte femma '+(s.line+1),detail:s.players.join(', ')+' ('+fmt(s.duration)+')'})),...state.events.map(e=>({period:e.period,time:e.time,type:e.type,detail:e.type==='Mål framåt'?[e.scorer,e.assist?'assist: '+e.assist:''].filter(Boolean).join(', '):e.type==='Spelarbyte'?e.players[0]+' UT → '+e.players[1]+' IN':e.players.join(', ')}))].sort((a,b)=>Number(a.period)-Number(b.period)||a.time-b.time);$('log').innerHTML=all.map(e=>`<tr><td>${e.period}</td><td>${fmt(e.time)}</td><td>${e.type}</td><td>${e.detail}</td></tr>`).join('')}
 
 function renderPenalties(){const ps=state.penalties||[];const root=$('penalties');root.innerHTML='';for(const [i,p] of ps.entries()){const at=matchTime(),start=matchTime(p.period,p.time),end=penaltyEnd(p),remainingSec=Math.max(0,Math.ceil(end-Math.max(start,at)));let d=document.createElement('div');d.className='row';d.style.margin='8px 0';let t=document.createElement('span');t.textContent=(p.team==='own'?'Öjaby · '+p.player:'Motståndare')+' · '+p.minutes+' min · '+(p.reason||'Ingen orsak')+' · '+(remainingSec?fmt(remainingSec)+' kvar':p.endedByGoal?'Avslutad vid mål':'Avslutad');let b=document.createElement('button');b.className='secondary';b.textContent='Ta bort';b.onclick=()=>{if(confirm('Ta bort utvisningen?')){state.penalties.splice(i,1);save();render()}};d.append(t,b);root.append(d)}}
 $('penPlayer').innerHTML=names.map(n=>'<option>'+n+'</option>').join('');$('penTeam').onchange=()=>{$('penPlayer').disabled=$('penTeam').value==='opp'};
@@ -463,8 +463,16 @@ render();const oldTick=tick;tick=function(){oldTick();drawShift();drawAnalysis()
 const byId=id=>document.getElementById(id);
 function updateBoard(){
  const events=state.events||[];
- byId('boardOwn').textContent=events.filter(e=>e.type==='Mål framåt').length;
- byId('boardAway').textContent=events.filter(e=>e.type==='Mål bakåt').length;
+ if(state.matchKind==='internal'){
+  const test=state.internalStatEvents||[];
+  byId('boardOwn').textContent=test.filter(e=>e.team==='blue'&&e.type==='goal').length;
+  byId('boardAway').textContent=test.filter(e=>e.team==='red'&&e.type==='goal').length;
+  byId('boardOpponent').textContent='ÖJABY RÖD';
+ }else{
+  byId('boardOwn').textContent=events.filter(e=>e.type==='Mål framåt').length;
+  byId('boardAway').textContent=events.filter(e=>e.type==='Mål bakåt').length;
+  byId('boardOpponent').textContent=(state.opponent||'MOTSTÅNDARE').toUpperCase();
+ }
  byId('boardPeriod').textContent='PERIOD '+state.period;
  byId('boardOpponent').textContent=(state.opponent||'MOTSTÅNDARE').toUpperCase();
  byId('boardClock').textContent=fmt(elapsed());
@@ -934,7 +942,7 @@ async function record(type){
   if(![2,5,10].includes(minutes)){alert('Välj 2, 5 eller 10 minuter.');return}
  }
  state.internalStatEvents.push({team:selected,type,player,assist,minutes,period:state.period,time:stamp()});
- save();draw();
+ save();render();draw();
 }
 function rows(side){
  const eventList=events(side);
@@ -961,7 +969,9 @@ function rows(side){
  $('ipsTotals').textContent=`${side==='red'?'Rött':'Blått'} lag · ${eventList.filter(e=>e.type==='goal').length} mål · ${eventList.filter(e=>e.type==='shotOn').length} skott på mål · ${eventList.filter(e=>e.type==='penalty').length} utvisningar`;
 }
 function draw(){
- panel.hidden=!internal();if(!internal())return;
+ panel.hidden=!internal();actionRoot.hidden=!internal();
+ $('quickPanel').classList.toggle('ips-internal-mode',internal());
+ if(!internal())return;
  ensure();
  const goalieSelect=$('ipsGoalie');
  const goalieNames=roster.filter(p=>p.goalie).map(p=>p.name);
@@ -989,14 +999,24 @@ $('ipsGoalie').onchange=function(){
 };
 $('ipsBlue').onclick=()=>{selected='blue';draw()};
 $('ipsRed').onclick=()=>{selected='red';draw()};
-for(const [type,label] of types){
- const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>record(type);$('ipsActions').append(b);
+// Matchhändelserna hör hemma i Snabbcoach: ett eget knappfält per lag.
+const actionRoot=document.createElement('div');
+actionRoot.id='ipsQuickActions';
+actionRoot.innerHTML='<div class="ips-quick-team"><h3>🔵 Öjaby blå – händelser</h3><div class="ips-quick-buttons" id="ipsQuickBlue"></div></div><div class="ips-quick-team"><h3>🔴 Öjaby röd – händelser</h3><div class="ips-quick-buttons" id="ipsQuickRed"></div></div>';
+$('internalTeams').after(actionRoot);
+for(const [team,id] of [['blue','ipsQuickBlue'],['red','ipsQuickRed']]){
+ for(const [type,label] of types){
+  const b=document.createElement('button');b.type='button';b.textContent=label;
+  b.onclick=()=>{selected=team;draw();record(type)};
+  $(id).append(b);
+ }
 }
+$('ipsActions').hidden=true;
 $('ipsUndo').onclick=()=>{
  ensure();
  const index=state.internalStatEvents.findLastIndex(e=>e.team===selected);
  if(index<0){alert('Inga separata testhändelser att ångra för detta lag.');return}
- state.internalStatEvents.splice(index,1);save();draw();
+ state.internalStatEvents.splice(index,1);save();render();draw();
 };
 // Följ röda lagets femmabyten utan att ändra den ordinarie statistikmotorn.
 window.mcCloseRedShift=redShiftClose;
@@ -1090,4 +1110,13 @@ window.mcGetRedPlayerSeconds=name=>(state.internalRedPlayerSeconds||[]).find(x=>
 #internalPlayerStats #ipsGoalie{display:block;width:100%;min-height:46px;margin-top:7px;font-size:16px}
 #internalPlayerStats label:has(#ipsGoalie){display:block;width:100%;font-weight:700}
 #internalPlayerStats #ipsGoalieStatus{display:block;margin-top:5px}
+</style><style id="ips-quick-actions-style">
+#ipsQuickActions[hidden],#internalPlayerStats #ipsActions[hidden]{display:none!important}
+#ipsQuickActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+#ipsQuickActions .ips-quick-team{min-width:0;border:1px solid #405a75;border-radius:10px;padding:9px}
+#ipsQuickActions .ips-quick-team h3{font-size:13px;margin:0 0 8px}
+#ipsQuickActions .ips-quick-buttons{display:grid;grid-template-columns:1fr;gap:6px}
+#ipsQuickActions button{font-size:12px;min-height:40px;padding:7px 3px;white-space:normal}
+#quickPanel.ips-internal-mode > .quickGrid,#quickPanel.ips-internal-mode > #quickPicker{display:none!important}
+@media(min-width:650px){#ipsQuickActions .ips-quick-buttons{grid-template-columns:1fr 1fr}}
 </style></body></html>

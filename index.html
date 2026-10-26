@@ -78,6 +78,12 @@
 </style><style id="stickyMatchboard">
 /* Behåll matchtavlan synlig när resten av sidan scrollas. */
 #clockPanel{position:-webkit-sticky;position:sticky;top:0;z-index:100;background:#17283e;box-shadow:0 5px 18px rgba(0,0,0,.38)}
+</style><style id="mc-series-player-picker-improvements">
+#quickPlayers .mc-player-group-title{width:100%;font-size:12px;font-weight:700;color:#a9c6e5;margin:6px 0 2px}
+#quickPlayers .mc-player-choice{min-height:48px;padding:10px 12px}
+#quickPlayers .mc-show-bench{width:100%;min-height:38px;font-size:12px;margin-top:8px}
+#quickPlayers .mc-bench-choices{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:6px}
+#quickPlayers .mc-bench-choices[hidden]{display:none!important}
 </style></head><body><main><h1 class="compactTitle">🏑 Matchcoach</h1><section class="panel" id="clockPanel"><div class="matchFieldsHidden" hidden><label>Motstånd <input id="opponent" placeholder="Motståndare"></label><label>Datum <input type="date" id="date"></label><label>Period <select id="period"><option>1</option><option>2</option><option>3</option><option>Förlängning</option></select></label></div><div class="row"><div class="clock" id="clock">00:00</div><button id="startClock">Starta klockan</button><button class="secondary" id="resetClock">Nollställ periodklockan</button><button type="button" class="danger" id="finishMatch">🏁 Avsluta match</button><label class="matchKindPicker" for="matchKind">Matchtyp <select id="matchKind" aria-label="Välj matchtyp"><option value="series">Seriematch</option><option value="internal">Internmatch</option></select></label><span class="tag" id="live">Ingen femma inne</span><label class="periodCorner" for="periodQuick">Period <select id="periodQuick" aria-label="Välj period"><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="Förlängning">Förl.</option></select></label></div><p class="help">Matchklockan räknar upp från 00:00 till 15:00 per period (3 × 15 minuter). När du trycker ”IN” avslutas föregående femmas byte och den nya femman startar direkt. Pausa klockan vid avblåsningar om du vill mäta effektiv speltid.</p></section><section class="panel" id="liveScoreboard" aria-label="Livetavla"><div class="scoreTop"><span>ÖJABY</span><span id="boardPeriod" hidden>PERIOD 1</span><span id="boardOpponent">MOTSTÅNDARE</span></div><div class="scoreNumbers"><span id="boardOwn">0</span><span class="scoreDash">–</span><span id="boardAway">0</span></div><div class="scoreTime" id="boardClock" hidden>00:00</div><div class="scorePenalties"><div><strong>ÖJABY · UTVISNINGAR</strong><div id="boardOwnPen">Inga aktiva</div></div><div><strong>MOTSTÅNDARE · UTVISNINGAR</strong><div id="boardOppPen">Inga aktiva</div></div></div><p class="help" style="margin-bottom:0">Utvisningstiderna följer matchklockan. Vid mål får du bekräfta eventuell kvittning.</p></section><section class="panel" id="matchSquadPanel">
 <h2>👥 Matchtrupp – före match</h2>
 <p class="help">Välj vilka spelare som är uttagna till dagens match. Spelare som inte är med visas inte som val vid nya händelser eller byten. Dina sparade femmor behålls till nästa match.</p>
@@ -355,27 +361,46 @@ function add(type,player='',assist=''){
  state.events.push(ev);save();hidePicker();render();
  feedback(type+' registrerat'+(player?' · '+player:ev.line!==null?' · femma '+(ev.line+1):'')+(assist?' · assist '+assist:''));
 }
+function eligiblePlayers(exclude=''){
+ const on=onFloor().filter(n=>n!==exclude);
+ const bench=roster.filter(p=>p.active&&!p.goalie&&!on.includes(p.name)&&p.name!==exclude).map(p=>p.name);
+ return {on,bench};
+}
+function renderPlayerChoices(root,on,bench,callback){
+ root.replaceChildren();
+ const heading=document.createElement('div');heading.className='mc-player-group-title';
+ heading.textContent='🟢 På planen';root.append(heading);
+ if(!on.length){const msg=document.createElement('div');msg.className='muted';msg.textContent='Ingen spelare vald på planen';root.append(msg)}
+ for(const name of on){const button=document.createElement('button');button.type='button';button.className='mc-player-choice';button.textContent=name;button.onclick=()=>callback(name);root.append(button)}
+ if(bench.length){
+  const toggle=document.createElement('button');toggle.type='button';toggle.className='secondary mc-show-bench';toggle.textContent='Visa övriga i matchtruppen ('+bench.length+')';
+  root.append(toggle);
+  const benchBox=document.createElement('div');benchBox.className='mc-bench-choices';benchBox.hidden=true;
+  for(const name of bench){const button=document.createElement('button');button.type='button';button.className='secondary mc-player-choice';button.textContent=name;button.onclick=()=>callback(name);benchBox.append(button)}
+  root.append(benchBox);
+  toggle.onclick=()=>{benchBox.hidden=!benchBox.hidden;toggle.textContent=benchBox.hidden?'Visa övriga i matchtruppen ('+bench.length+')':'Dölj övriga spelare'};
+ }
+}
 function chooseAssist(scorer){
  pending='Mål framåt';
- const floor=onFloor().filter(n=>n!==scorer);
+ const {on,bench}=eligiblePlayers(scorer);
  $q('quickPicker').hidden=false;
  $q('quickPrompt').textContent='Målskytt: '+scorer+' – vem assisterade?';
- const root=$q('quickPlayers');root.replaceChildren();
- floor.forEach(name=>{const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>add('Mål framåt',scorer,name);root.append(b)});
+ const root=$q('quickPlayers');
+ renderPlayerChoices(root,on,bench,name=>add('Mål framåt',scorer,name));
  const none=document.createElement('button');none.type='button';none.className='secondary';none.textContent='Ingen assist';none.onclick=()=>add('Mål framåt',scorer,'');root.append(none);
- $q('quickLineOnly').textContent='Registrera mål utan assist';
+ $q('quickLineOnly').textContent='Registrera utan assist';
  $q('quickLineOnly').onclick=()=>add('Mål framåt',scorer,'');
 }
 function choose(type){
- $q('quickLineOnly').onclick=()=>{if(pending)add(pending)};
  pending=type;
- const floor=onFloor();
+ const {on,bench}=eligiblePlayers();
  $q('quickPicker').hidden=false;
- $q('quickPrompt').textContent=type+' – vem var det?';
- const root=$q('quickPlayers');root.replaceChildren();
- if(!floor.length){const t=document.createElement('span');t.textContent='Ingen femma aktiv. Välj en femma först, eller registrera utan spelare.';root.append(t);}
- floor.forEach(name=>{const b=document.createElement('button');b.type='button';b.textContent=name;b.onclick=()=>type==='Mål framåt'?chooseAssist(name):add(type,name);root.append(b)});
- $q('quickLineOnly').textContent=type==='Mål framåt'?'⚡ Mål utan angiven målskytt':floor.length?'⚡ Registrera på femman':'⚡ Registrera utan femma';
+ $q('quickPrompt').textContent=type+' – välj spelare';
+ const root=$q('quickPlayers');
+ renderPlayerChoices(root,on,bench,name=>type==='Mål framåt'?chooseAssist(name):add(type,name));
+ $q('quickLineOnly').textContent=type==='Mål framåt'?'⚡ Mål utan angiven målskytt':on.length?'⚡ Registrera på femman':'⚡ Registrera utan spelare';
+ $q('quickLineOnly').onclick=()=>{if(pending)add(pending)};
  $q('quickPicker').scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 $q('quickGoal').onclick=()=>{stopForStoppage();choose('Mål framåt');};

@@ -1445,4 +1445,98 @@ const oldRender=render;render=function(){oldRender();draw5()};
 const oldSeason=renderSeason;renderSeason=function(){oldSeason();draw5()};
 drawTemplates();draw5();
 })();
-</script></body></html>
+</script>
+<style id="mc-dual-view-style">
+#mcViewNav{position:sticky;top:var(--mc-nav-top,0px);z-index:65;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:7px;background:#0b1728;border:1px solid #31445e;border-radius:12px;margin:9px 0}
+#mcViewNav button{padding:10px 8px;min-height:43px;background:#263c56;color:#d9e7f6}
+#mcViewNav button[aria-selected="true"]{background:#159268;color:#fff}
+#mcViewHelp{font-size:11px;text-align:center;color:#a9bdd4;margin:-4px 0 6px}
+.mc-view-page[hidden]{display:none!important}
+.mc-view-page{min-width:0}
+#mcBackQuick{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));right:14px;z-index:80;border-radius:999px;padding:11px 14px;box-shadow:0 5px 18px #0009;font-size:13px}
+#mcBackQuick[hidden]{display:none!important}
+@media(max-width:600px){#mcViewNav{gap:5px}#mcViewNav button{font-size:14px}}
+</style>
+<script id="mc-dual-view">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const main=document.querySelector('main');
+if(!main||!$('quickPanel'))return;
+const nav=document.createElement('div');nav.id='mcViewNav';nav.setAttribute('role','tablist');
+const matchBtn=document.createElement('button'),analysisBtn=document.createElement('button');
+matchBtn.type=analysisBtn.type='button';
+matchBtn.textContent='🏑 Match';analysisBtn.textContent='📊 Analys';
+matchBtn.setAttribute('role','tab');analysisBtn.setAttribute('role','tab');
+matchBtn.id='mcMatchTab';analysisBtn.id='mcAnalysisTab';
+nav.append(matchBtn,analysisBtn);
+const help=document.createElement('div');help.id='mcViewHelp';help.textContent='Svep åt sidan för att växla vy · tryck på flikarna som alternativ';
+const match=document.createElement('div'),analysis=document.createElement('div');
+match.id='mcMatchView';analysis.id='mcAnalysisView';
+match.className=analysis.className='mc-view-page';
+match.setAttribute('role','tabpanel');analysis.setAttribute('role','tabpanel');
+match.setAttribute('aria-labelledby','mcMatchTab');analysis.setAttribute('aria-labelledby','mcAnalysisTab');
+const scoreboard=$('liveScoreboard'),clock=$('clockPanel');
+const anchor=scoreboard||clock;
+anchor.after(nav,help,match,analysis);
+const matchIds=new Set(['matchSquadPanel','quickPanel','swapPanel','linesPanel','eventsPanel','coachExtras','penaltyPanel','livePanel','mcTimeWarningPanel']);
+const analysisIds=new Set(['matchSchedule','rosterPanel','mcOverviewPanel','mcPlayerStatsPanel','mcEventLogPanel','analysisPanel','periodPanel','seasonPanel','reportPanel','trainingPanel','mcFivePanel','mcPrepPanel','internalPlayerStats']);
+function movePanel(id){
+ const el=$(id);if(!el)return;
+ const dest=matchIds.has(id)?match:analysis;
+ if(el.parentElement!==dest)dest.append(el);
+}
+for(const id of matchIds)movePanel(id);
+for(const id of analysisIds)movePanel(id);
+let current='match';
+function setView(next,scroll=false){
+ current=next==='analysis'?'analysis':'match';
+ match.hidden=current!=='match';analysis.hidden=current!=='analysis';
+ matchBtn.setAttribute('aria-selected',String(current==='match'));
+ analysisBtn.setAttribute('aria-selected',String(current==='analysis'));
+ matchBtn.tabIndex=current==='match'?0:-1;analysisBtn.tabIndex=current==='analysis'?0:-1;
+ if(scroll)nav.scrollIntoView({block:'start',behavior:'smooth'});
+ updateBack();
+}
+matchBtn.onclick=()=>setView('match',true);
+analysisBtn.onclick=()=>setView('analysis',true);
+function updateBack(){
+ const quick=$('quickPanel'),back=$('mcBackQuick');
+ if(!quick||!back)return;
+ back.hidden=current!=='match'||quick.getBoundingClientRect().bottom>window.innerHeight*.45;
+}
+const back=document.createElement('button');back.id='mcBackQuick';back.type='button';
+back.textContent='⚡ Snabbcoach';back.hidden=true;
+back.onclick=()=>{setView('match');$('quickPanel').scrollIntoView({block:'start',behavior:'smooth'})};
+document.body.append(back);
+window.addEventListener('scroll',updateBack,{passive:true});
+window.addEventListener('resize',updateBack,{passive:true});
+// Only horizontal swipes beginning on non-interactive page areas change tabs.
+// Tables, forms, buttons and other scrollable regions retain their own gestures.
+let start=null;
+main.addEventListener('touchstart',e=>{
+ if(e.touches.length!==1){start=null;return}
+ const t=e.target;
+ if(t.closest('button,input,select,textarea,label,a,summary,table,.scroll,[contenteditable],#quickPicker,[role="dialog"]')){start=null;return}
+ const touch=e.touches[0];start={x:touch.clientX,y:touch.clientY,time:Date.now()};
+},{passive:true});
+main.addEventListener('touchend',e=>{
+ if(!start||e.changedTouches.length!==1)return;
+ const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
+ if(Math.abs(dx)>90&&Math.abs(dx)>Math.abs(dy)*1.7&&Date.now()-start.time<900){
+  if(dx<0&&current==='match')setView('analysis',true);
+  if(dx>0&&current==='analysis')setView('match',true);
+ }
+ start=null;
+},{passive:true});
+main.addEventListener('touchcancel',()=>start=null,{passive:true});
+// Dynamic internmatch panel is created later; move it into analysis when available.
+const observer=new MutationObserver(()=>{
+ const dynamic=$('internalPlayerStats');
+ if(dynamic&&dynamic.parentElement!==analysis)analysis.append(dynamic);
+});
+observer.observe(main,{childList:true,subtree:true});
+setView('match');
+})();
+</script>
+</body></html>

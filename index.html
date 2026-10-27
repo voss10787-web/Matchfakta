@@ -1569,4 +1569,22 @@ setView('match',false);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+</script><script id="mc-panel-order-fix">
+(function(){
+  'use strict';
+  function arrange(){
+    const get=id=>document.getElementById(id);
+    const match=get('mcMatchView'),quick=get('quickPanel'),swap=get('swapPanel');
+    const squad=get('matchSquadPanel'),goalie=get('goaliePanel');
+    if(!match||!quick||!swap||!squad||!goalie)return;
+    // Matchtavlan and its clock stay outside the swipe pages, at the top.
+    // First section inside Match: Snabbcoach; then Snabbbyte, goalie, squad.
+    match.insertBefore(quick,match.firstElementChild);
+    quick.after(swap);
+    swap.after(goalie);
+    goalie.after(squad);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',arrange,{once:true});
+  else arrange();
+})();
 </script></body></html>

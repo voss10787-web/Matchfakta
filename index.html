@@ -1504,39 +1504,60 @@ build();
 })();
 </script>
 
-<script id="mc-penalty-navigation-fix">
+<style id="mc-inline-penalty-style">
+#mcInlinePenalty{margin:10px 0;padding:12px;border:1px solid #52738e;border-radius:11px;background:#14283f}
+#mcInlinePenalty[hidden]{display:none!important}
+#mcInlinePenalty .row{display:flex;flex-wrap:wrap;gap:9px}
+#mcInlinePenalty label{flex:1 1 130px}
+#mcInlinePenalty select,#mcInlinePenalty input{max-width:100%;width:100%}
+#mcInlinePenalty button{min-height:46px}
+</style>
+<script id="mc-inline-penalty-flow">
 (function(){
 'use strict';
-function goToPenalty(button){
+function init(){
+ const quick=document.getElementById('quickPanel');
  const panel=document.getElementById('penaltyPanel');
- const select=document.getElementById('penTeam');
- if(!panel||!select)return;
- const isOpp=button.id==='quickPenalty'||!!button.closest('#mcQuickOppTeam');
- select.value=isOpp?'opp':'own';
- select.dispatchEvent(new Event('change',{bubbles:true}));
- // Use the normal clock control so match state is saved consistently.
- const pause=document.getElementById('startClock');
- if(pause && /paus|stoppa/i.test(pause.textContent||''))pause.click();
- // Open ALL enclosing native details; previously the outer "Utvisningar – detaljer"
- // remained closed, so focusing or scrolling could not expose the penalty form.
- let ancestor=panel.parentElement;
- while(ancestor){if(ancestor.tagName==='DETAILS')ancestor.open=true;ancestor=ancestor.parentElement;}
- if(panel.classList.contains('mc-folded')){
-  const expand=panel.querySelector('h2 .mc-fold-button');
-  if(expand)expand.click();else panel.classList.remove('mc-folded');
+ const team=document.getElementById('penTeam');
+ const submit=document.getElementById('addPenalty');
+ if(!quick||!panel||!team||!submit)return;
+ const formRow=submit.closest('.row');if(!formRow)return;
+ const originalParent=formRow.parentNode,originalNext=formRow.nextSibling;
+ const box=document.createElement('div');box.id='mcInlinePenalty';box.hidden=true;
+ const header=document.createElement('div');header.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px';
+ const heading=document.createElement('strong');heading.textContent='⏱️ Registrera utvisning';
+ const close=document.createElement('button');close.type='button';close.textContent='Stäng';close.className='secondary';
+ header.append(heading,close);box.append(header);
+ const picker=document.getElementById('quickPicker');
+ if(picker&&picker.parentNode===quick)picker.after(box);else quick.append(box);
+ function hide(){box.hidden=true;if(formRow.parentNode===box)originalParent.insertBefore(formRow,originalNext);}
+ function open(button){
+  // Use the same original form and event handlers as the detailed penalty panel.
+  if(formRow.parentNode!==box)box.append(formRow);
+  const isOpp=button.id==='quickPenalty'||!!button.closest('#mcQuickOppTeam');
+  team.value=isOpp?'opp':'own';team.dispatchEvent(new Event('change',{bubbles:true}));
+  const pause=document.getElementById('startClock');
+  if(pause&&/paus|stoppa/i.test(pause.textContent||''))pause.click();
+  box.hidden=false;
+  box.scrollIntoView({block:'nearest',behavior:'smooth'});
  }
- requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  panel.scrollIntoView({block:'start',behavior:'smooth'});
-  select.focus({preventScroll:true});
- }));
-}
-document.addEventListener('click',function(event){
- const button=event.target.closest('button');
- if(!button||!button.closest('#quickPanel'))return;
- if(!/utvisning/i.test(button.textContent||''))return;
- event.preventDefault();event.stopImmediatePropagation();
- goToPenalty(button);
-},true);
+ close.addEventListener('click',hide);
+ submit.addEventListener('click',function(){
+  // Existing validation and registration run first (they were installed earlier).
+  // Do not close immediately: leave validation feedback visible if input is invalid.
+  setTimeout(function(){
+   const player=document.getElementById('penPlayer');
+   if(!box.hidden&&player&&player.value)hide();
+  },100);
+ });
+ document.addEventListener('click',function(e){
+  const button=e.target.closest('button');
+  if(!button||!button.closest('#quickPanel')||!/utvisning/i.test(button.textContent||''))return;
+  if(button===submit||button===close)return;
+  e.preventDefault();e.stopImmediatePropagation();open(button);
+ },true);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
 <script id="mc-five-features">

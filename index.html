@@ -163,19 +163,19 @@ function renderLines(){
  const root=$('lines');root.innerHTML='';
  const positions=['Back – vänster','Back – höger','Center','Vänster forward','Höger forward'];
  const sortedNames=[...names].sort((a,b)=>a.localeCompare(b,'sv',{sensitivity:'base'}));
- // Ordinary lines (1–3 + Extra) must not share players. PP/BP are unrestricted.
+ // Ordinary lines 1–3 must not share players. Extra/special and PP/BP are unrestricted.
  function refreshOrdinaryChoices(){
   const picks=[...root.querySelectorAll('select[data-line][data-position]')];
   for(const sel of picks){
    const i=Number(sel.dataset.line),j=Number(sel.dataset.position);
    const reserved=new Set();
-   if(i<4){
-    for(let k=0;k<4;k++)if(k!==i)for(const n of state.lines[k])if(n)reserved.add(n);
+   if(i<3){
+    for(let k=0;k<3;k++)if(k!==i)for(const n of state.lines[k])if(n)reserved.add(n);
     for(let k=0;k<5;k++)if(k!==j&&state.lines[i][k])reserved.add(state.lines[i][k]);
    }
    for(const opt of sel.options){
     if(!opt.value)continue;
-    opt.disabled=i<4&&reserved.has(opt.value)&&opt.value!==sel.value;
+    opt.disabled=i<3&&reserved.has(opt.value)&&opt.value!==sel.value;
    }
   }
  }
@@ -194,7 +194,7 @@ function renderLines(){
    sel.value=line[j]||'';
    sel.onchange=()=>{
     const chosen=sel.value;
-    if(i<4&&chosen&&state.lines.slice(0,4).some((other,k)=>k!==i&&other.includes(chosen))){
+    if(i<3&&chosen&&state.lines.slice(0,3).some((other,k)=>k!==i&&other.includes(chosen))){
      alert('Spelaren är redan vald i en annan ordinarie femma.');sel.value=state.lines[i][j]||'';return;
     }
     if(chosen&&state.lines[i].some((n,k)=>k!==j&&n===chosen)){
@@ -208,7 +208,31 @@ function renderLines(){
  refreshOrdinaryChoices();
 }
 function closeActive(){if(state.active){state.shifts.push({...state.active,end:elapsed(),duration:Math.max(0,elapsed()-state.active.start)});state.active=null}}
-function switchLine(i){if(i>=0&&i<=3)state.lastNormalLine=i;const players=[...new Set(state.lines[i].filter((name,j)=>name&&(i!==5&&i!==7||j!==2)))];const absent=players.filter(n=>!roster.some(p=>p.name===n&&p.active&&!p.goalie));if(absent.length)return alert('Följande spelare är inte uttagna: '+absent.join(', ')+'. Ändra femman under Kedjor eller matchtruppen.');if(!players.length)return alert('Välj spelare först.');if((i===5||i===7)&&players.length!==4)return alert('Boxplay ska ha exakt fyra utespelare: två backar och två forwards.');if(state.active?.line===i&&players.length===state.active.players.length&&players.every(n=>state.active.players.includes(n)))return;closeActive();state.active={line:i,players,start:elapsed(),period:state.period};if([4,5,6,7].includes(i))state.mode=(i===4||i===6)?'PP':'BP';else state.mode=penaltyMode();save();render()}
+function switchLine(i){if(i>=0&&i<=2)state.lastNormalLine=i;
+let players=[...new Set(state.lines[i].filter((name,j)=>name&&(i!==5&&i!==7||j!==2)))];
+if(i===3&&state.active?.players?.length){
+ // Extra/special: only selected positions change. All blank positions remain on court.
+ const old=state.active;
+ const oldTemplate=state.lines[old.line]||[];
+ let currentSlots=Array(5).fill('');
+ if(old.line===3&&Array.isArray(old.positionPlayers)){
+   currentSlots=[...old.positionPlayers];
+ }else{
+   // Active players are stored in position order. BP has no center.
+   const positions=(old.line===5||old.line===7)?[0,1,3,4]:[0,1,2,3,4];
+   positions.forEach((pos,k)=>{currentSlots[pos]=old.players[k]||''});
+ }
+ const extra=state.lines[3];
+ const nextSlots=currentSlots.map((name,pos)=>extra[pos]||name);
+ players=nextSlots.filter(Boolean);
+ if(new Set(players).size!==players.length)return alert('Extra/special skulle ge samma spelare på två positioner. Ändra uppställningen.');
+ // Retain position information for a later special substitution.
+ state.mcNextSpecialPositions=nextSlots;
+}
+const absent=players.filter(n=>!roster.some(p=>p.name===n&&p.active&&!p.goalie));if(absent.length)return alert('Följande spelare är inte uttagna: '+absent.join(', ')+'. Ändra femman under Kedjor eller matchtruppen.');if(!players.length)return alert('Välj spelare först.');if((i===5||i===7)&&players.length!==4)return alert('Boxplay ska ha exakt fyra utespelare: två backar och två forwards.');if(state.active?.line===i&&players.length===state.active.players.length&&players.every(n=>state.active.players.includes(n)))return;closeActive();state.active={line:i,players,start:elapsed(),period:state.period};
+if(i===3&&state.mcNextSpecialPositions)state.active.positionPlayers=state.mcNextSpecialPositions;
+delete state.mcNextSpecialPositions;
+if([4,5,6,7].includes(i))state.mode=(i===4||i===6)?'PP':'BP';else state.mode=penaltyMode();save();render()}
 function renderSwap(){
 const on=state.active?.players||[];
 const available=names.filter(n=>!on.includes(n));
@@ -237,6 +261,7 @@ function swapPlayer(){
  const replacements=new Map(pairs);
  const players=previous.players.map(n=>replacements.get(n)||n);
  state.active={line:previous.line,players,start:elapsed(),period:state.period};
+ if(previous.line===3&&previous.positionPlayers)state.active.positionPlayers=previous.positionPlayers.map(n=>replacements.get(n)||n);
  state.events.push({period:state.period,time:elapsed(),type:'Spelarbyte',players:pairs.flat(),mode:state.mode,scorer:'',assist:''});
  save();render();
 }

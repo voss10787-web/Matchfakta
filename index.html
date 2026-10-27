@@ -147,6 +147,10 @@ body:not(.compact-matchboard) #clockPanel button{min-height:38px!important;paddi
 body:not(.compact-matchboard) #clockPanel .periodCorner select{padding:4px!important}
 body:not(.compact-matchboard) #clockPanel .matchKindPicker select{padding:5px!important}
 @media(max-width:420px){body:not(.compact-matchboard) #clockPanel .scoreNumbers{font-size:36px!important}body:not(.compact-matchboard) #clockPanel .clock{font-size:28px!important}}
+</style><style id="mc-bottom-tabs-css">
+#mcViewNav{position:fixed!important;top:auto!important;bottom:0!important;left:0;right:0;width:100%;box-sizing:border-box;margin:0!important;padding:8px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important;border-radius:12px 12px 0 0!important;z-index:100!important;box-shadow:0 -4px 20px rgba(0,0,0,.3)}
+body{padding-bottom:calc(88px + env(safe-area-inset-bottom))!important}
+#mcBackQuick{bottom:calc(86px + env(safe-area-inset-bottom))!important}
 </style></head><body><main><h1 class="compactTitle"><img src="icon-192.png" alt="Öjaby Sport" class="mcClubLogo"> Matchcoach</h1><section class="panel" id="clockPanel"><div class="matchFieldsHidden" hidden><label>Motstånd <input id="opponent" placeholder="Motståndare"></label><label>Datum <input type="date" id="date"></label><label>Period <select id="period"><option>1</option><option>2</option><option>3</option><option>Förlängning</option></select></label></div><div class="row"><div class="clock" id="clock">00:00</div><button id="startClock">Starta klockan</button><button class="secondary" id="resetClock">Nollställ periodklockan</button><button type="button" class="danger" id="finishMatch">🏁 Avsluta match</button><label class="matchKindPicker" for="matchKind">Matchtyp <select id="matchKind" aria-label="Välj matchtyp"><option value="series">Seriematch</option><option value="internal">Internmatch</option></select></label><span class="tag" id="live">Ingen femma inne</span><label class="periodCorner" for="periodQuick">Period <select id="periodQuick" aria-label="Välj period"><option value="1">P1</option><option value="2">P2</option><option value="3">P3</option><option value="Förlängning">Förl.</option></select></label></div><p class="help">Matchklockan räknar upp från 00:00 till 15:00 per period (3 × 15 minuter). När du trycker ”IN” avslutas föregående femmas byte och den nya femman startar direkt. Pausa klockan vid avblåsningar om du vill mäta effektiv speltid.</p></section><section class="panel" id="liveScoreboard" aria-label="Livetavla"><div class="scoreTop"><span>ÖJABY</span><span id="boardPeriod" hidden>PERIOD 1</span><span id="boardOpponent">MOTSTÅNDARE</span></div><div class="scoreNumbers"><span id="boardOwn">0</span><span class="scoreDash">–</span><span id="boardAway">0</span></div><div class="scoreTime" id="boardClock" hidden>00:00</div><div class="scorePenalties"><div><strong>ÖJABY · UTVISNINGAR</strong><div id="boardOwnPen">Inga aktiva</div></div><div><strong>MOTSTÅNDARE · UTVISNINGAR</strong><div id="boardOppPen">Inga aktiva</div></div></div><p class="help" style="margin-bottom:0">Utvisningstiderna följer matchklockan. Vid mål får du bekräfta eventuell kvittning.</p></section><nav id="mcViewNav" aria-label="Välj vy" role="tablist"><button id="mcMatchTab" type="button" role="tab" aria-selected="true">🏑 Match</button><button id="mcAnalysisTab" type="button" role="tab" aria-selected="false">📊 Analys</button></nav><div id="mcViewHelp">Svep åt vänster eller höger för att växla mellan Match och Analys</div><div id="mcMatchView" class="mc-view-page" role="tabpanel"></div><div id="mcAnalysisView" class="mc-view-page" role="tabpanel" hidden></div><section class="panel" id="matchSquadPanel">
 <h2>👥 Matchtrupp – före match</h2>
 <p class="help">Välj vilka spelare som är uttagna till dagens match. Spelare som inte är med visas inte som val vid nya händelser eller byten. Dina sparade femmor behålls till nästa match.</p>
@@ -1537,6 +1541,9 @@ const main=document.querySelector('main');
 const match=byId('mcMatchView'),analysis=byId('mcAnalysisView');
 const nav=byId('mcViewNav'),matchBtn=byId('mcMatchTab'),analysisBtn=byId('mcAnalysisTab');
 if(!main||!match||!analysis||!nav)return;
+// Place tab navigation at the bottom without rebuilding buttons or gesture handlers.
+document.body.appendChild(nav);
+const viewHelp=byId('mcViewHelp');if(viewHelp)viewHelp.hidden=true;
 const matchIds=['matchSquadPanel','quickPanel','swapPanel','linesPanel','eventsPanel','coachExtras','penaltyPanel','livePanel','mcTimeWarningPanel'];
 const analysisIds=['matchSchedule','rosterPanel','mcOverviewPanel','mcPlayerStatsPanel','mcEventLogPanel','analysisPanel','periodPanel','seasonPanel','reportPanel','trainingPanel','mcFivePanel','mcPrepPanel','internalPlayerStats'];
 for(const id of matchIds){const el=byId(id);if(el)match.appendChild(el)}
@@ -1640,8 +1647,8 @@ function group(parent,title,ids,open){
  return count?d:null;
 }
 // Preserve the existing match controls, but collect secondary workflows.
-group(match,'🏑 Femmor och uppställningar',['linesPanel'],false);
 group(match,'🔄 Snabbbyten',['swapPanel'],true);
+group(match,'🏑 Femmor och uppställningar',['linesPanel'],false);
 group(match,'🥅 Målvakter och dagens matchtrupp',['goaliePanel','matchSquadPanel'],false);
 group(match,'⏱️ Livevy och speltider',['livePanel','mcTimeWarningPanel','coachExtras'],false);
 group(match,'📝 Matchhändelser och logg',['eventsPanel'],false);

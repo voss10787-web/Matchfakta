@@ -1657,7 +1657,7 @@ const sections=[
  {label:'🏑 Femmaanalyser',title:'🏑 Femmaanalyser',ids:['analysisPanel'],open:false},
  {label:'🏆 Säsong och rapporter',title:'🏆 Säsong och rapporter',ids:['seasonPanel','reportPanel'],open:false},
  {label:'📝 Händelselogg',title:'📝 Händelse- och byteslogg',ids:['mcEventLogPanel'],open:false},
- {label:'⚙️ Förberedelser',title:'⚙️ Trupp, närvaro och förberedelser',ids:['rosterPanel','trainingPanel','mcPrepPanel','matchSchedule'],open:false}
+ {label:'⚙️ Förberedelser',title:'⚙️ Trupp, närvaro och förberedelser',ids:['rosterPanel','trainingPanel','mcPrepPanel'],open:false}
 ];
 const groups=[];
 for(let i=0;i<sections.length;i++){
@@ -1707,6 +1707,37 @@ byId('mcBackupImport').onchange=async e=>{
 };
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+
+<style id="mc-match-preparation-style">
+#clockPanel .matchKindPicker{display:none!important}
+#matchSquadPanel .mc-prep-matchtype{display:flex!important;align-items:center;flex-wrap:wrap;gap:9px;margin:8px 0 12px;padding:10px;background:rgba(75,101,132,.16);border-radius:9px}
+#matchSquadPanel .mc-prep-matchtype select{min-width:145px;max-width:100%}
+#matchSquadPanel #matchSchedule{margin:8px 0 14px;padding:10px;border:1px solid #49617b;border-radius:10px}
+#matchSquadPanel #matchSchedule h2{font-size:16px;margin:0 0 7px}
+#matchSquadPanel .mc-prep-heading{font-size:13px;font-weight:700;margin:12px 0 5px}
+</style>
+<script id="mc-match-preparation-script">
+(function(){
+function init(){
+ const squad=document.getElementById('matchSquadPanel');
+ const kind=document.querySelector('#clockPanel .matchKindPicker');
+ const schedule=document.getElementById('matchSchedule');
+ if(!squad||!kind||!schedule)return;
+ // Move existing controls, not copies: all event listeners and saved data stay intact.
+ kind.classList.add('mc-prep-matchtype');
+ kind.style.display='flex';
+ const heading=document.createElement('div');
+ heading.className='mc-prep-heading';
+ heading.textContent='Matchinställningar';
+ const intro=squad.querySelector('p.help');
+ if(intro){intro.before(heading);heading.after(kind);kind.after(schedule)}
+ else{squad.prepend(schedule);squad.prepend(kind);squad.prepend(heading)}
+ // Keep the existing choose-match button: it populates date/opponent as before.
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+else init();
 })();
 </script>
 </body></html>

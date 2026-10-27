@@ -1511,35 +1511,30 @@ function goToPenalty(button){
  const panel=document.getElementById('penaltyPanel');
  const select=document.getElementById('penTeam');
  if(!panel||!select)return;
- const text=button.textContent||'';
- const isOpp=button.id==='quickPenalty'||!!button.closest('#mcQuickOppTeam')||/motståndare/i.test(text);
- // Identify the button's team from the enclosing Snabbcoach column when possible.
- const parent=button.parentElement;
- const parentText=parent?.closest('.quickTeam')?.querySelector('h3')?.textContent||'';
- const opponent=isOpp||/motståndare/i.test(parentText);
- select.value=opponent?'opp':'own';
+ const isOpp=button.id==='quickPenalty'||!!button.closest('#mcQuickOppTeam');
+ select.value=isOpp?'opp':'own';
  select.dispatchEvent(new Event('change',{bubbles:true}));
- if(typeof state!=='undefined'&&state.running){
-  // Existing handlers are bypassed; stop through the application's clock control.
-  const pause=document.getElementById('startClock');
-  if(pause)pause.click();
- }
- // The penalty panel is folded by default. Open it BEFORE scrolling.
+ // Use the normal clock control so match state is saved consistently.
+ const pause=document.getElementById('startClock');
+ if(pause && /paus|stoppa/i.test(pause.textContent||''))pause.click();
+ // Open ALL enclosing native details; previously the outer "Utvisningar – detaljer"
+ // remained closed, so focusing or scrolling could not expose the penalty form.
+ let ancestor=panel.parentElement;
+ while(ancestor){if(ancestor.tagName==='DETAILS')ancestor.open=true;ancestor=ancestor.parentElement;}
  if(panel.classList.contains('mc-folded')){
   const expand=panel.querySelector('h2 .mc-fold-button');
-  if(expand)expand.click();
-  else panel.classList.remove('mc-folded');
+  if(expand)expand.click();else panel.classList.remove('mc-folded');
  }
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
   panel.scrollIntoView({block:'start',behavior:'smooth'});
+  select.focus({preventScroll:true});
  }));
 }
 document.addEventListener('click',function(event){
  const button=event.target.closest('button');
  if(!button||!button.closest('#quickPanel'))return;
  if(!/utvisning/i.test(button.textContent||''))return;
- event.preventDefault();
- event.stopImmediatePropagation();
+ event.preventDefault();event.stopImmediatePropagation();
  goToPenalty(button);
 },true);
 })();

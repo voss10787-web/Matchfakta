@@ -1146,9 +1146,9 @@ section.panel.mc-foldable.mc-folded{padding-bottom:12px!important}
 (function(){
  const key='matchcoach-section-folding-v1';
  const sections=[
-  ['matchSquadPanel',false],['quickPanel',true],
+  ['matchSquadPanel',false],
   ['swapPanel',false],['linesPanel',false],
-  ['eventsPanel',true],['coachExtras',false],
+  ['coachExtras',false],
   ['rosterPanel',false],['penaltyPanel',false],
   ['livePanel',false],['analysisPanel',false],
   ['periodPanel',false],['seasonPanel',false],
@@ -1838,6 +1838,34 @@ document.addEventListener('touchend',function(e){
  tap.button.click();
 },{passive:false,capture:true});
 document.addEventListener('touchcancel',function(){start=null},{passive:true,capture:true});
+})();
+</script>
+
+<script id="mc-quickcoach-always-available">
+(function(){
+ function init(){
+  const quick=document.getElementById('quickPanel');
+  if(!quick)return;
+  // Clear old persisted folding state from previous app versions.
+  quick.classList.remove('mc-folded','mc-foldable');
+  quick.querySelector(':scope > h2 > .mc-fold-button')?.remove();
+  const picker=document.getElementById('quickPicker');
+  if(picker && picker.parentElement!==quick)quick.appendChild(picker);
+  // Detailed event registration may stay collapsed; Quickcoach works independently.
+  const events=document.getElementById('eventsPanel');
+  if(events){
+   events.classList.remove('mc-folded','mc-foldable');
+   events.querySelector(':scope > h2 > .mc-fold-button')?.remove();
+  }
+  try{
+   const key='matchcoach-section-folding-v1';
+   const saved=JSON.parse(localStorage.getItem(key)||'{}');
+   delete saved.quickPanel;delete saved.eventsPanel;
+   localStorage.setItem(key,JSON.stringify(saved));
+  }catch(e){}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+ else init();
 })();
 </script>
 </body></html>

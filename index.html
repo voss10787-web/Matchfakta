@@ -707,7 +707,8 @@ const dateField=el('trainingDate'),playersBox=el('trainingPlayers');
 const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const fromIso=s=>new Date(s+'T12:00:00');
 const weekday=d=>d.getDay()===2?'tisdag':d.getDay()===4?'torsdag':'annan veckodag';
-const rosterNames=()=>roster.map(p=>p.name).filter(Boolean);
+const nameSort=(a,b)=>a.localeCompare(b,'sv',{sensitivity:'base',numeric:true});
+const rosterNames=()=>roster.map(p=>p.name).filter(Boolean).sort(nameSort);
 const initialDate=()=>{const d=new Date();for(let i=0;i<7;i++){if([2,4].includes(d.getDay()))return iso(d);d.setDate(d.getDate()+1)}return iso(d)};
 function goTraining(dir){const d=fromIso(dateField.value||initialDate());do{d.setDate(d.getDate()+dir)}while(![2,4].includes(d.getDay()));dateField.value=iso(d);draw()}
 function statusOptions(selected){return [['present','Närvarande'],['absent','Frånvarande'],['excused','Anmält förhinder']].map(([v,t])=>'<option value="'+v+'"'+(selected===v?' selected':'')+'>'+t+'</option>').join('')}
@@ -715,7 +716,7 @@ function draw(){const date=dateField.value;if(!date)return;const saved=sessions[
 playersBox.innerHTML=rosterNames().map(n=>'<div class="trainingPlayer"><strong>'+esc(n)+'</strong><select data-player="'+esc(n)+'" aria-label="Närvaro '+esc(n)+'">'+statusOptions(entries[n]||'present')+'</select></div>').join('');
 el('trainingDelete').disabled=!saved;el('trainingFeedback').textContent='';drawStats()}
 function drawStats(){const names=rosterNames();const totals=new Map(names.map(n=>[n,{present:0,absent:0,excused:0}]));const dates=Object.keys(sessions).sort();for(const d of dates){const entries=sessions[d]?.players||{};for(const [n,v] of Object.entries(entries)){if(!totals.has(n))totals.set(n,{present:0,absent:0,excused:0});if(['present','absent','excused'].includes(v))totals.get(n)[v]++}}
-el('trainingStatsBody').innerHTML=[...totals].map(([n,t])=>{const count=t.present+t.absent+t.excused;return '<tr><td>'+esc(n)+'</td><td>'+t.present+'</td><td>'+t.absent+'</td><td>'+t.excused+'</td><td>'+(count?Math.round(100*t.present/count)+' %':'–')+'</td></tr>'}).join('');
+el('trainingStatsBody').innerHTML=[...totals].sort((a,b)=>nameSort(a[0],b[0])).map(([n,t])=>{const count=t.present+t.absent+t.excused;return '<tr><td>'+esc(n)+'</td><td>'+t.present+'</td><td>'+t.absent+'</td><td>'+t.excused+'</td><td>'+(count?Math.round(100*t.present/count)+' %':'–')+'</td></tr>'}).join('');
 el('trainingSessions').textContent=dates.length+' sparade träningar'+(dates.length?' · Senaste: '+dates.slice(-5).reverse().join(', '):'');}
 function persist(){localStorage.setItem(KEY_TRAIN,JSON.stringify(sessions))}
 function downloadFile(name,data,type){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([data],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}

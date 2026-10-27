@@ -162,23 +162,50 @@ save()}
 function renderLines(){
  const root=$('lines');root.innerHTML='';
  const positions=['Back – vänster','Back – höger','Center','Vänster forward','Höger forward'];
+ const sortedNames=[...names].sort((a,b)=>a.localeCompare(b,'sv',{sensitivity:'base'}));
+ // Ordinary lines (1–3 + Extra) must not share players. PP/BP are unrestricted.
+ function refreshOrdinaryChoices(){
+  const picks=[...root.querySelectorAll('select[data-line][data-position]')];
+  for(const sel of picks){
+   const i=Number(sel.dataset.line),j=Number(sel.dataset.position);
+   const reserved=new Set();
+   if(i<4){
+    for(let k=0;k<4;k++)if(k!==i)for(const n of state.lines[k])if(n)reserved.add(n);
+    for(let k=0;k<5;k++)if(k!==j&&state.lines[i][k])reserved.add(state.lines[i][k]);
+   }
+   for(const opt of sel.options){
+    if(!opt.value)continue;
+    opt.disabled=i<4&&reserved.has(opt.value)&&opt.value!==sel.value;
+   }
+  }
+ }
  state.lines.forEach((line,i)=>{
   const card=document.createElement('div');card.className='panel';card.style.margin='0';
   const h=document.createElement('h3');h.textContent=i<3?'Femma '+(i+1):['Extra / special','Powerplay 1 (PP1)','Boxplay 1 (BP1)','Powerplay 2 (PP2)','Boxplay 2 (BP2)'][i-3];card.append(h);
   const grid=document.createElement('div');grid.className='five positionFive';
   for(let j=0;j<5;j++){
-   if((i===5||i===7)&&j===2)continue; // Boxplay: två backar och två forwards, ingen center
+   if((i===5||i===7)&&j===2)continue;
    const wrap=document.createElement('label');wrap.className='positionSlot';
    const caption=document.createElement('span');caption.textContent=positions[j];wrap.append(caption);
-   const sel=document.createElement('select');
+   const sel=document.createElement('select');sel.dataset.line=i;sel.dataset.position=j;
    const blank=document.createElement('option');blank.value='';blank.textContent='– välj spelare –';sel.append(blank);
-   for(const n of names){const opt=document.createElement('option');opt.value=n;opt.textContent=n;sel.append(opt)}
-   if(line[j]&&!names.includes(line[j])){const opt=document.createElement('option');opt.value=line[j];opt.textContent=line[j]+' (ej uttagen)';sel.append(opt)}
+   for(const n of sortedNames){const opt=document.createElement('option');opt.value=n;opt.textContent=n;sel.append(opt)}
+   if(line[j]&&!sortedNames.includes(line[j])){const opt=document.createElement('option');opt.value=line[j];opt.textContent=line[j]+' (ej uttagen)';sel.append(opt)}
    sel.value=line[j]||'';
-   sel.onchange=()=>{state.lines[i][j]=sel.value;save()};wrap.append(sel);grid.append(wrap);
+   sel.onchange=()=>{
+    const chosen=sel.value;
+    if(i<4&&chosen&&state.lines.slice(0,4).some((other,k)=>k!==i&&other.includes(chosen))){
+     alert('Spelaren är redan vald i en annan ordinarie femma.');sel.value=state.lines[i][j]||'';return;
+    }
+    if(chosen&&state.lines[i].some((n,k)=>k!==j&&n===chosen)){
+     alert('Samma spelare kan inte ha två positioner i samma femma.');sel.value=state.lines[i][j]||'';return;
+    }
+    state.lines[i][j]=chosen;save();refreshOrdinaryChoices();
+   };wrap.append(sel);grid.append(wrap);
   }
   card.append(grid);const btn=document.createElement('button');btn.style.marginTop='10px';btn.textContent=i===3?'Extra IN':i===4?'PP1 IN':i===5?'BP1 IN':i===6?'PP2 IN':i===7?'BP2 IN':'Femma '+(i+1)+' IN';btn.className=state.active?.line===i?'active':'';btn.onclick=()=>switchLine(i);card.append(btn);root.append(card);
  });
+ refreshOrdinaryChoices();
 }
 function closeActive(){if(state.active){state.shifts.push({...state.active,end:elapsed(),duration:Math.max(0,elapsed()-state.active.start)});state.active=null}}
 function switchLine(i){if(i>=0&&i<=3)state.lastNormalLine=i;const players=[...new Set(state.lines[i].filter((name,j)=>name&&(i!==5&&i!==7||j!==2)))];const absent=players.filter(n=>!roster.some(p=>p.name===n&&p.active&&!p.goalie));if(absent.length)return alert('Följande spelare är inte uttagna: '+absent.join(', ')+'. Ändra femman under Kedjor eller matchtruppen.');if(!players.length)return alert('Välj spelare först.');if((i===5||i===7)&&players.length!==4)return alert('Boxplay ska ha exakt fyra utespelare: två backar och två forwards.');if(state.active?.line===i&&players.length===state.active.players.length&&players.every(n=>state.active.players.includes(n)))return;closeActive();state.active={line:i,players,start:elapsed(),period:state.period};if([4,5,6,7].includes(i))state.mode=(i===4||i===6)?'PP':'BP';else state.mode=penaltyMode();save();render()}

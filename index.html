@@ -1632,10 +1632,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 #mcAnalysisMenu button{font-size:12px;padding:12px 5px;min-height:46px;border-radius:9px;background:#2b4761;color:#f0f5fb;border:1px solid #52738e}
 #mcAnalysisMenu button[aria-pressed="true"]{background:#167e62;border-color:#46b495}
 #mcAnalysisMenu .mc-menu-wide{grid-column:span 2}
-#mcBackupTools{padding:12px;border:1px solid #48617d;border-radius:12px;margin:12px 0}
-#mcBackupTools button,#mcBackupTools label{display:inline-block;padding:10px 12px;margin:4px 5px 4px 0;border-radius:8px;background:#2b4761;color:white;font-size:12px;cursor:pointer}
-#mcBackupTools input[type=file]{display:none}
-#mcBackupTools p{font-size:12px;opacity:.8}
 </style>
 <script id="mc-clean-layout-js">
 (function(){
@@ -1693,31 +1689,7 @@ for(let i=0;i<sections.length;i++){
 }
 analysis.insertBefore(menu,analysis.firstChild);
 // Preserve any panel not explicitly listed: no content or logic is deleted.
-const backup=document.createElement('section');backup.id='mcBackupTools';
-backup.innerHTML='<strong>💾 Säkerhetskopia</strong><p>Exportera appens lokalt sparade uppgifter innan större ändringar. Filen kan innehålla spelar- och matchuppgifter; förvara den säkert.</p><button type="button" id="mcBackupExport">Exportera säkerhetskopia</button><label for="mcBackupImport">Återställ från fil</label><input type="file" id="mcBackupImport" accept=".json,application/json"><p>Återställning ersätter appens nuvarande lokala uppgifter. Appen laddas om efter bekräftelse.</p>';
-analysis.append(backup);
-const keyMatches=k=>/^(ojaby|matchcoach|mc_|innebandy)/i.test(k);
-byId('mcBackupExport').onclick=()=>{
- const data={};
- for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&keyMatches(k))data[k]=localStorage.getItem(k)}
- const obj={format:'matchcoach-backup-v1',created:new Date().toISOString(),data};
- const url=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));
- const a=document.createElement('a');a.href=url;a.download='matchcoach-sakerhetskopia-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();
- setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
-byId('mcBackupImport').onchange=async e=>{
- const file=e.target.files?.[0];if(!file)return;
- try{
-  const obj=JSON.parse(await file.text());
-  if(obj.format!=='matchcoach-backup-v1'||!obj.data||typeof obj.data!=='object'||Array.isArray(obj.data))throw Error('Filen är inte en giltig Matchcoach-säkerhetskopia.');
-  const entries=Object.entries(obj.data);
-  if(!entries.length||entries.some(([k,v])=>!keyMatches(k)||typeof v!=='string'))throw Error('Säkerhetskopian innehåller ogiltiga data.');
-  if(!confirm('Återställa '+entries.length+' sparade poster? Befintliga uppgifter med samma namn skrivs över. Exportera gärna en säkerhetskopia först.'))return;
-  for(const [k,v] of entries)localStorage.setItem(k,v);
-  location.reload();
- }catch(err){alert('Återställning misslyckades: '+err.message)}
- finally{e.target.value=''}
-};
+
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

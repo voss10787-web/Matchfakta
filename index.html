@@ -1804,4 +1804,40 @@ else init();
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();
 })();
 </script>
+
+<style id="mc-ios-tap-reliability-css">
+/* Make the entire tappable area responsive, without changing visual layout. */
+#mcMatchView button,#mcAnalysisView button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,255,255,.12)}
+</style>
+<script id="mc-ios-tap-reliability">
+(function(){
+'use strict';
+// iOS sometimes interprets a short finger tap inside a scrolling panel as a
+// gesture instead of forwarding a click. For stationary taps on actual buttons,
+// trigger the existing click handler exactly once on touchend.
+let start=null;
+document.addEventListener('touchstart',function(e){
+ if(e.touches.length!==1){start=null;return}
+ const button=e.target.closest('button');
+ if(!button||!button.closest('#mcMatchView,#mcAnalysisView')||button.disabled){start=null;return}
+ const t=e.touches[0];start={button,x:t.clientX,y:t.clientY,time:Date.now(),moved:false};
+},{passive:true,capture:true});
+document.addEventListener('touchmove',function(e){
+ if(!start||e.touches.length!==1)return;
+ const t=e.touches[0];
+ if(Math.abs(t.clientX-start.x)>10||Math.abs(t.clientY-start.y)>10)start.moved=true;
+},{passive:true,capture:true});
+document.addEventListener('touchend',function(e){
+ const tap=start;start=null;
+ if(!tap||tap.moved||e.changedTouches.length!==1||Date.now()-tap.time>650)return;
+ const t=e.changedTouches[0];
+ if(Math.abs(t.clientX-tap.x)>10||Math.abs(t.clientY-tap.y)>10)return;
+ if(!tap.button.isConnected||tap.button.disabled||!tap.button.contains(e.target))return;
+ // Suppress the browser-generated click so events are never registered twice.
+ if(e.cancelable)e.preventDefault();
+ tap.button.click();
+},{passive:false,capture:true});
+document.addEventListener('touchcancel',function(){start=null},{passive:true,capture:true});
+})();
+</script>
 </body></html>

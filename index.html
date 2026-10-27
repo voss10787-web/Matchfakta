@@ -1753,4 +1753,17 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else init();
 })();
 </script>
+
+<script id="mc-nav-exact-after-penalty-details">
+(function(){
+ function place(){
+  const nav=document.getElementById('mcViewNav');
+  const penalty=document.getElementById('penaltyPanel');
+  if(!nav||!penalty)return;
+  const details=penalty.closest('details.mc-section-group');
+  if(details&&details.parentElement){details.insertAdjacentElement('afterend',nav)}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();
+})();
+</script>
 </body></html>

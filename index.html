@@ -192,7 +192,7 @@ const initialRoster=[{"name": "Algot Karlsson", "goalie": false, "active": true}
 if(!Array.isArray(state.lines)||!Array.isArray(state.events)||!Array.isArray(state.shifts)||!Array.isArray(state.penalties)||!state.lines.every(line=>Array.isArray(line))){
  state=structuredClone(defaults);
 }
-state.running=false;while(state.lines.length<8)state.lines.push(['','','','','']);let timer=null,lastTick=0;const $=id=>document.getElementById(id),fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`,save=()=>localStorage.setItem(KEY,JSON.stringify(state));function elapsed(){return Math.min(900,state.seconds)}function remaining(){return Math.max(0,900-elapsed())}function tick(){if(!state.running)return;const now=performance.now();state.seconds=Math.min(900,state.seconds+(now-lastTick)/1000);lastTick=now;if(state.seconds>=900){state.running=false;closeActive();clearInterval(timer);timer=null;save();render();return;}renderStats();renderPenalties();$('clock').textContent=fmt(elapsed());
+state.running=false;while(state.lines.length<8)state.lines.push(['','','','','']);let timer=null,lastTick=0;const $=id=>document.getElementById(id),fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`,save=()=>localStorage.setItem(KEY,JSON.stringify(state));function elapsed(){return Math.min(900,state.seconds)}function remaining(){return Math.max(0,900-elapsed())}function tick(){if(!state.running)return;const now=performance.now();state.seconds=Math.min(900,state.seconds+(now-lastTick)/1000);lastTick=now;const mcReturned=mcReturnExpiredPlayers();if(state.seconds>=900){state.running=false;closeActive();clearInterval(timer);timer=null;save();render();return;}if(mcReturned)render();else{renderStats();renderPenalties();}$('clock').textContent=fmt(elapsed());
 const seriesTime=document.querySelector('#mcSeriesActive .mc-series-time');
 if(seriesTime&&state.matchKind!=='internal'&&state.active)seriesTime.textContent='Bytestid '+fmt(Math.max(0,elapsed()-state.active.start));
 save()}
@@ -359,6 +359,31 @@ function swapPlayer(){
 }
 function matchTime(period=state.period,sec=elapsed()){return (Number(period)-1)*900+sec}
 function penaltyEnd(p){return p.endedAt??(matchTime(p.period,p.time)+p.minutes*60)}
+// When an Öjaby minor expires, return that player to the current BP unit at the exact match second.
+// The split preserves correct individual playing time even if the timer callback runs late.
+function mcReturnExpiredPlayers(now=matchTime()){
+ const ps=(state.penalties||[]).filter(p=>p.team==='own'&&Number(p.minutes)!==10&&p.player&&!p.mcReturned&&penaltyEnd(p)<=now)
+  .sort((a,b)=>penaltyEnd(a)-penaltyEnd(b));
+ let changed=false;
+ for(const p of ps){
+  const at=penaltyEnd(p);
+  p.mcReturned=true;changed=true;
+  if(!state.active||!Array.isArray(state.active.players)||state.active.players.includes(p.player)||state.active.players.length>=5)continue;
+  // Only amend the current unit if it spans the expiration and remains in the same period.
+  const period=String(Math.floor(at/900)+1),second=at-(Number(period)-1)*900;
+  if(String(state.active.period)!==period||second<state.active.start-0.001)continue;
+  const old=state.active;
+  state.shifts.push({...old,end:second,duration:Math.max(0,second-old.start)});
+  state.active={...old,players:[...old.players,p.player],start:second};
+  if(Array.isArray(old.positionPlayers)){
+   const slots=[...old.positionPlayers];const free=slots.findIndex(x=>!x);
+   if(free>=0)slots[free]=p.player;
+   state.active.positionPlayers=slots;
+  }
+ }
+ if(changed){state.mode=penaltyMode(now);save();}
+ return changed;
+}
 function activePenalties(at=matchTime()){return (state.penalties||[]).filter(p=>matchTime(p.period,p.time)<=at&&penaltyEnd(p)>at)}
 function penaltyMode(at=matchTime()){const active=activePenalties(at);const own=active.filter(p=>p.team==='own'&&p.minutes!==10).length,opp=active.filter(p=>p.team==='opp'&&p.minutes!==10).length;return own>opp?'BP':opp>own?'PP':'5v5'}
 function canEndMinorOnGoal(type,at){const active=activePenalties(at);const own=active.filter(p=>p.team==='own'&&p.minutes!==10).length,opp=active.filter(p=>p.team==='opp'&&p.minutes!==10).length;const penalized=type==='Mål framåt'&&opp>own?'opp':type==='Mål bakåt'&&own>opp?'own':null;return !!(penalized&&active.some(p=>p.team===penalized&&p.minutes===2));}
@@ -389,7 +414,7 @@ function endMinorOnGoal(type,at,ask=false){
  p.endedAt=at;p.endedByGoal=true;
  return p;
 }
-function record(){const type=$('eventType').value;if(type==='Mål framåt'||type==='Mål bakåt'){if(state.running){tick();state.running=false;clearInterval(timer);timer=null;}}const at=matchTime();const mode=penaltyMode(at);const ev={period:state.period,time:elapsed(),type,players:state.active?.players||[],mode,scorer:$('scorer').value,assist:$('assist').value,goalie:state.goalkeeper||''};if(type==='Mål framåt'||type==='Mål bakåt'){const before=(state.penalties||[]).map(p=>({endedAt:p.endedAt,endedByGoal:p.endedByGoal}));const couldEnd=canEndMinorOnGoal(type,at);const ended=endMinorOnGoal(type,at,true);if(couldEnd&&!ended)ev.penaltyKeep=true;if(ended){ev.penaltyEnded=true;ev._penaltyBefore=before;}}else if(type==='Powerplay start')state.mode='PP';else if(type==='Powerplay slut')state.mode='5v5';else if(type==='Boxplay start')state.mode='BP';else if(type==='Boxplay slut')state.mode='5v5';state.events.push(ev);save();render()}
+function record(){const type=$('eventType').value;if(type==='Mål framåt'||type==='Mål bakåt'){if(state.running){tick();state.running=false;clearInterval(timer);timer=null;}}const at=matchTime();const mode=penaltyMode(at);const ev={period:state.period,time:elapsed(),type,players:state.active?.players||[],mode,scorer:$('scorer').value,assist:$('assist').value,goalie:state.goalkeeper||''};if(type==='Mål framåt'||type==='Mål bakåt'){const before=(state.penalties||[]).map(p=>({endedAt:p.endedAt,endedByGoal:p.endedByGoal}));const couldEnd=canEndMinorOnGoal(type,at);const ended=endMinorOnGoal(type,at,true);if(couldEnd&&!ended)ev.penaltyKeep=true;if(ended){ev.penaltyEnded=true;ev._penaltyBefore=before;}}else if(type==='Powerplay start')state.mode='PP';else if(type==='Powerplay slut')state.mode='5v5';else if(type==='Boxplay start')state.mode='BP';else if(type==='Boxplay slut')state.mode='5v5';state.events.push(ev);mcReturnExpiredPlayers();save();render()}
 function statFor(name){let time=0,shifts=0,plus=0,goals=0,assists=0;let previous=null;for(const sh of [...state.shifts,...(state.active?[{...state.active,duration:Math.max(0,elapsed()-state.active.start)}]:[])].filter(sh=>Array.isArray(sh.players)&&Number(sh.duration)>0).sort((a,b)=>Number(a.period)-Number(b.period)||Number(a.start)-Number(b.start))){if(sh.players.includes(name)){time+=Number(sh.duration);const continuous=previous&&String(previous.period)===String(sh.period)&&previous.players.includes(name)&&Math.abs(Number(previous.end??(Number(previous.start)+Number(previous.duration||0)))-Number(sh.start))<0.01;if(!continuous)shifts++;}previous=sh;}for(const e of state.events){if(e.type==='Mål framåt'&&e.scorer===name)goals++;if(e.type==='Mål framåt'&&e.assist===name)assists++;if(e.mode==='5v5'&&!e.penaltyShot&&e.players.includes(name)){if(e.type==='Mål framåt')plus++;if(e.type==='Mål bakåt')plus--}}return {time,shifts,plus,goals,assists,shotsOn:state.events.filter(e=>e.type==='Skott på mål'&&e.scorer===name).length,shotsOff:state.events.filter(e=>e.type==='Skott utanför'&&e.scorer===name).length,blocks:state.events.filter(e=>e.type==='Täckt skott'&&e.scorer===name).length,penMinutes:(state.penalties||[]).filter(p=>p.team==='own'&&p.player===name).reduce((a,p)=>a+p.minutes,0),faceoffsWon:state.events.filter(e=>e.type==='Vunnen tekning'&&e.scorer===name).length,faceoffsLost:state.events.filter(e=>e.type==='Förlorad tekning'&&e.scorer===name).length}}
 
 function renderLiveView(){
@@ -701,7 +726,7 @@ function add(type,player='',assist=''){
    const ended=endMinorOnGoal(type,at,true);
    if(ended){ev.penaltyEnded=true;ev._penaltyBefore=before;}
  }
- state.events.push(ev);save();hidePicker();render();
+ state.events.push(ev);mcReturnExpiredPlayers();save();hidePicker();render();
  feedback(type+' registrerat'+(player?' · '+player:ev.line!==null?' · femma '+(ev.line+1):'')+(assist?' · assist '+assist:''));
 }
 function eligiblePlayers(exclude=''){

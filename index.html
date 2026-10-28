@@ -90,6 +90,11 @@
 .mc-series-time{font-variant-numeric:tabular-nums;font-weight:700}
 .mc-series-names{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
 .mc-series-names span{background:#284660;padding:5px 8px;border-radius:6px}
+.mc-series-names .mc-tap-player{background:#284660;border:1px solid #53738c;border-radius:7px;padding:8px 10px;min-height:42px;font-size:inherit;color:inherit;cursor:pointer}
+.mc-series-names .mc-tap-player:focus-visible{outline:3px solid #7ab9ff;outline-offset:2px}
+.mc-tap-swap-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.mc-tap-swap-list button{min-height:43px;padding:8px 11px;font-size:14px}
+.mc-tap-swap-label{font-weight:700;margin-bottom:6px}
 #quickPanel .mc-series-swap-trigger{min-height:38px;padding:7px 12px;font-size:13px}
 #mcSeriesSwap{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px;border:1px solid #395b77;border-radius:10px;margin-bottom:8px}
 #mcSeriesSwap[hidden]{display:none!important}
@@ -819,6 +824,7 @@ function quickRender(){
  // Visar verklig uppställning, inte bara namnet på den senast valda femman.
  const active=state.active;
  const activeBox=$q('mcSeriesActive'),swapBox=$q('mcSeriesSwap');
+ const tapOut=swapBox.dataset.mcTapOut;
  const lineNames=['Femma 1','Femma 2','Femma 3','Extra','PP1','BP1','PP2','BP2'];
  if(active){
   const template=state.lines[active.line]||[];
@@ -832,20 +838,35 @@ function quickRender(){
   heading.append(label,time);activeBox.append(heading);
   if(active.line>=4&&active.line<=7){const note=document.createElement('div');note.className='mc-special-note';note.textContent='Efter PP/BP: välj själv Femma 1, 2, 3 eller Extra ovan. Ingen automatisk återgång.';activeBox.append(note);}
   const namesBox=document.createElement('div');namesBox.className='mc-series-names';
-  active.players.forEach(name=>{const el=document.createElement('span');el.textContent=name;namesBox.append(el)});activeBox.append(namesBox);
+  active.players.forEach(name=>{const el=document.createElement('button');el.type='button';el.className='mc-tap-player';el.textContent=name;el.title='Byt ut '+name;el.onclick=()=>showTapSwap(name);namesBox.append(el)});activeBox.append(namesBox);
   const trigger=document.createElement('button');trigger.type='button';trigger.className='secondary mc-series-swap-trigger';trigger.textContent='🔄 Byt en spelare';activeBox.append(trigger);
   // Behåll formuläret öppet under render, även när matchklockan uppdateras.
   trigger.onclick=()=>{swapBox.hidden=!swapBox.hidden;drawSeriesSwap()};
-  if(!swapBox.hidden)drawSeriesSwap();
+  if(!swapBox.hidden){if(tapOut&&active.players.includes(tapOut))showTapSwap(tapOut);else drawSeriesSwap();}
  }else{
   activeBox.textContent='Ingen femma på planen – välj en femma ovan.';
   swapBox.hidden=true;swapBox.replaceChildren();
+ }
+ function showTapSwap(outName){
+  if(!state.active||!state.active.players.includes(outName))return;
+  swapBox.hidden=false;swapBox.replaceChildren();swapBox.dataset.mcTapOut=outName;
+  const label=document.createElement('div');label.className='mc-tap-swap-label';label.textContent='Byt ut '+outName+' – välj spelare IN:';swapBox.append(label);
+  const choices=document.createElement('div');choices.className='mc-tap-swap-list';
+  const available=names.filter(n=>!state.active.players.includes(n)&&roster.some(p=>p.name===n&&p.active&&!p.goalie));
+  if(!available.length){const msg=document.createElement('p');msg.textContent='Inga tillgängliga utespelare på bänken.';choices.append(msg);}
+  available.forEach(n=>{const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent=n;b.onclick=()=>{
+   if(!state.active?.players.includes(outName)||state.active.players.includes(n))return;
+   $('swapOut').value=outName;$('swapIn').value=n;$('swapOut2').value='';$('swapIn2').value='';
+   swapBox.hidden=true;delete swapBox.dataset.mcTapOut;swapPlayer();
+  };choices.append(b)});
+  swapBox.append(choices);
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Avbryt';cancel.style.marginTop='10px';cancel.onclick=()=>{swapBox.hidden=true;swapBox.replaceChildren()};swapBox.append(cancel);
  }
  function drawSeriesSwap(){
   if(!state.active)return;
   const oldOut=swapBox.querySelector('[data-swap-out]')?.value||'';
   const oldIn=swapBox.querySelector('[data-swap-in]')?.value||'';
-  swapBox.replaceChildren();
+  delete swapBox.dataset.mcTapOut;swapBox.replaceChildren();
   const out=document.createElement('select'),inside=document.createElement('select');
   out.dataset.swapOut='';inside.dataset.swapIn='';
   const makeOption=(select,value,label)=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;select.append(opt)};
@@ -858,7 +879,7 @@ function quickRender(){
   go.onclick=()=>{if(!out.value||!inside.value)return alert('Välj spelare UT och IN.');
     $('swapOut').value=out.value;$('swapIn').value=inside.value;
     $('swapOut2').value='';$('swapIn2').value='';
-    swapBox.hidden=true;swapPlayer();};
+    swapBox.hidden=true;delete swapBox.dataset.mcTapOut;swapPlayer();};
   swapBox.append(out,inside,go);
  }
  const last=state.events[state.events.length-1];
